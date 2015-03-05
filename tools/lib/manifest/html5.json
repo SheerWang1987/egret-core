@@ -15,6 +15,6 @@
         "renderer/webgl/WebGLShaderManager.ts",
         "net/HTML5NetContext.ts",
         "interactive/HTML5TouchContext.ts",
-        "display/HTML5StageText.ts"
+        "display/HTML5StageText2.ts"
     ]
 }

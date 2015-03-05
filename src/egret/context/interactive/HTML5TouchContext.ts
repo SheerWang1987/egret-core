@@ -47,7 +47,7 @@ module egret {
         private prevent(event):void {
             event.stopPropagation();
             if (event["isScroll"] != true) {
-                event.preventDefault();
+                //event.preventDefault();
             }
         }
 

@@ -132,7 +132,7 @@ module egret {
 
         public onInput():void {
             var self = this;
-            if (!self._multiline) {
+            if (!self._multiline && self.inputElement.value.match(/\r|\n/)) {
                 self.inputElement.value = self.inputElement.value.replace(/\r|\n/g, "");
             }
 

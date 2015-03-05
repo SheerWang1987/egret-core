@@ -30,7 +30,6 @@ module egret {
      */
     export class InputController extends HashObject {
         private stageText:egret.StageText;
-        private _isFocus:boolean = false;
 
         private _text:TextField = null;
 
@@ -94,6 +93,7 @@ module egret {
         private onMouseDownHandler(event:TouchEvent) {
             event.stopPropagation();
 
+            var self = this;
             if (!this._text._visible) {
                 return;
             }
@@ -113,8 +113,12 @@ module egret {
             this._text._isTyping = true;
             var lineArr = this._text._getLinesArr();
             this._text.scrollV = lineArr.length - this._showLine + 1;
+
             //强制更新输入框位置
             this.stageText._show(this._text._multiline, this._text.size, this._text.width, this._text.height);
+
+            var point = this._text.localToGlobal();
+            this.stageText._initElement(point.x, point.y, self._text._worldTransform.a, self._text._worldTransform.d);
         }
 
         //未点中文本
@@ -137,7 +141,6 @@ module egret {
         }
 
         public _updateTransform():void {//
-            //todo 等待worldTransform的性能优化完成，合并这块代码
             this._text._updateBaseTransform();
         }
 

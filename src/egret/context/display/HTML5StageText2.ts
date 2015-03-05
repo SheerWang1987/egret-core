@@ -48,15 +48,28 @@ module egret {
 
         private _isNeedShow:boolean = false;
         private inputElement:any = null;
+        private inputDiv:any = null;
+
+        public _initElement(x:number, y:number, cX:number, cY:number):void {
+            var scaleX = egret.StageDelegate.getInstance().getScaleX();
+            var scaleY = egret.StageDelegate.getInstance().getScaleY();
+
+            this.inputDiv.position.x = x * scaleX;
+            this.inputDiv.position.y = y * scaleY;
+
+            this.inputDiv.scale.x = scaleX * cX;
+            this.inputDiv.scale.y = scaleY * cY;
+
+            this.inputDiv.transforms();
+        }
+
         public _show(multiline:boolean, size:number, width:number, height:number):void {
             this._multiline = multiline;
             this.inputElement = HTMLInput.getInstance().getInputElement(this);
+            this.inputDiv = this.inputElement.parentNode;
 
-            //this.inputElement.style.fontSize = size + "px";
-            //this.inputElement.style.width = width + "px";
-            //this.inputElement.style.height = height + "px";
-            //this.inputElement.style.fontStyle = "normal";
-            //this.inputElement.style.fontWeight = "normal";
+            this.inputElement.style.width = 1 + "px";
+            this.inputElement.style.height = height + "px";
 
             if (this._maxChars > 0) {
                 this.inputElement.setAttribute("maxlength", this._maxChars);
@@ -93,6 +106,7 @@ module egret {
 
             HTMLInput.getInstance().disconnectStageText(this);
             this.inputElement = null;
+            this.inputDiv = null;
         }
 
         private textValue:string = "";
@@ -153,31 +167,58 @@ module egret {
     export class HTMLInput {
         private _stageText:HTML5StageText;
         private _inputElement:any;
+        private _inputDIV:any;
         private initStageDelegateDiv():any {
             var stageDelegateDiv = egret.Browser.getInstance().$("#StageDelegateDiv");
             if (!stageDelegateDiv) {
                 stageDelegateDiv = egret.Browser.getInstance().$new("div");
                 stageDelegateDiv.id = "StageDelegateDiv";
-                stageDelegateDiv.style.position = "absolute";
                 var container = document.getElementById(egret.StageDelegate.canvas_div_name);
                 container.appendChild(stageDelegateDiv);
                 stageDelegateDiv.transforms();
+                stageDelegateDiv.style.position = "absolute";
                 stageDelegateDiv.style.left = "0px";
-                stageDelegateDiv.style.top = "-100px";
+                stageDelegateDiv.style.top = "0px";
                 stageDelegateDiv.style.width = "0px";
-                stageDelegateDiv.style.overflow = "hidden";
+                stageDelegateDiv.style.height = "0px";
+                stageDelegateDiv.style.border = "none";
+                stageDelegateDiv.style.padding = "0";
 
+                this._inputDIV = egret.Browser.getInstance().$new("div");
+                this._inputDIV.style.position = "absolute";
+                this._inputDIV.style.width = "0px";
+                this._inputDIV.style.height = "0px";
+                this._inputDIV.style.border = "none";
+                this._inputDIV.style.padding = "0";
+                this._inputDIV.position.x = 0;
+                this._inputDIV.position.y = 0;
+                this._inputDIV.scale.x = 1;
+                this._inputDIV.scale.y = 1;
+                this._inputDIV.transforms();
+                this._inputDIV.style[this.getTrans("transformOrigin")] = "0% 0% 0px";
+                stageDelegateDiv.appendChild(this._inputDIV);
 
-                //增加1个空的input和1个空的textarea
+                //增加1个空的textarea
                 var inputElement:any = document.createElement("textarea");
+                inputElement.style.position = "absolute";
                 inputElement.style["resize"] = "none";
                 inputElement.id = "egretTextarea";
-                stageDelegateDiv.appendChild(inputElement);
+                this._inputDIV.appendChild(inputElement);
                 inputElement.type = "text";
                 inputElement.setAttribute("tabindex", "-1");
-                inputElement.style.width = "0px";
-                inputElement.style.height = "0px";
+                inputElement.style.width = "1px";
+                inputElement.style.height = "12px";
                 inputElement.style.border = "none";
+                inputElement.style.padding = "0";
+                inputElement.style.left = "0px";
+                inputElement.style.top = "0px";
+
+                //完全隐藏输入框///////////////////////////
+                //隐藏光标
+                inputElement.style.fontSize = 0 + "px";
+                //隐藏输入框
+                inputElement.style.opacity = 0;
+                //////////////////////////////////////
 
                 inputElement.onkeyup = function (e) {
                     if (self._stageText) {
@@ -237,6 +278,36 @@ module egret {
             this._stageText = stageText;
 
             return this._inputElement;
+        }
+
+        private header:string = "";
+        /**
+         * 获取当前浏览器类型
+         * @type {string}
+         */
+        private getTrans(type:string):string {
+            if (this.header == "") {
+                this.header = this.getHeader();
+            }
+
+            return this.header + type.substring(1, type.length);
+        }
+
+        /**
+         * 获取当前浏览器的类型
+         * @returns {string}
+         */
+        private getHeader():string {
+            var tempStyle = document.createElement('div').style;
+            var transArr:Array<string> = ["t", "webkitT", "msT", "MozT", "OT"];
+            for (var i:number = 0; i < transArr.length; i++) {
+                var transform:string = transArr[i] + 'ransform';
+
+                if (transform in tempStyle)
+                    return transArr[i];
+            }
+
+            return transArr[0];
         }
 
         private static _instance:HTMLInput;

@@ -168,6 +168,10 @@ module egret {
 
         }
 
+        public _initElement(x:number, y:number, cX:number, cY:number):void {
+
+        }
+
         public static create():StageText {
             return null;
         }

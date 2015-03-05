@@ -191,7 +191,7 @@ module egret {
                 this._inputDIV.style.border = "none";
                 this._inputDIV.style.padding = "0";
                 this._inputDIV.position.x = 0;
-                this._inputDIV.position.y = 0;
+                this._inputDIV.position.y = -100;
                 this._inputDIV.scale.x = 1;
                 this._inputDIV.scale.y = 1;
                 this._inputDIV.transforms();
@@ -239,6 +239,15 @@ module egret {
                 inputElement.onblur = function() {
                     if (self._stageText) {
                         self.clearInputElement();
+
+                        inputElement.style.height = "12px";
+                        inputElement.style.left = "0px";
+                        inputElement.style.top = "0px";
+
+                        self._inputDIV.position.x = 0;
+                        self._inputDIV.position.y = -100;
+                        self._inputDIV.transforms();
+
                         window.scrollTo(0, 0);
                     }
                 };

@@ -955,6 +955,8 @@ module egret {
                         var scrollX:number = 0;
                         var scrollY:number = 0;
 
+                        inputDrawY += (self._size + self._lineSpacing);
+
                         for (var i:number = 0, length:number = lines.length; i < length; i++) {
                             var charNum:number = lines[i].charNum;
                             if (selectEnd - charNum <= 0) {
@@ -972,7 +974,7 @@ module egret {
                                 inputDrawX = Math.round((maxWidth - tempLine.width) * halign);
                                 inputDrawX += scrollX;
 
-                                scrollY = i + 1;
+                                scrollY = i;
                                 inputDrawY += (self._size + self._lineSpacing) * (scrollY - startLine);
                                 break;
                             }

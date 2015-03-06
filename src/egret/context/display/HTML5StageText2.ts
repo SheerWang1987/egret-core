@@ -54,7 +54,7 @@ module egret {
             var scaleX = egret.StageDelegate.getInstance().getScaleX();
             var scaleY = egret.StageDelegate.getInstance().getScaleY();
 
-            this.inputDiv.position.x = x * scaleX;
+            this.inputDiv.position.x = 0;//x * scaleX;
             this.inputDiv.position.y = y * scaleY;
 
             this.inputDiv.scale.x = scaleX * cX;

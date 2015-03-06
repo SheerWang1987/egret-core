@@ -546,7 +546,7 @@ module egret {
 
         public _updateBaseTransform():void {
             this._getLinesArr();
-            if (this._textMaxWidth == 0) {
+            if (this._textMaxWidth == 0 && this._type != TextFieldType.INPUT) {
                 return;
             }
 

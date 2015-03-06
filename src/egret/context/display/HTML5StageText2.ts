@@ -237,8 +237,14 @@ module egret {
                 inputElement.style.top = "0px";
 
                 //完全隐藏输入框///////////////////////////
-                //隐藏光标
-                inputElement.style.fontSize = 1 + "px";
+                //隐藏光标  ios 0   pc 1
+                var userAgent:string = navigator.userAgent;
+                if (userAgent.indexOf("Mac OS X") >= 0) {
+                    inputElement.style.fontSize = 1 + "px";
+                }
+                else {
+                    inputElement.style.fontSize = 0 + "px";
+                }
                 //隐藏输入框
                 inputElement.style.opacity = 0;
                 //////////////////////////////////////

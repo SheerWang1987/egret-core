@@ -102,18 +102,20 @@ module egret {
                 return;
             }
 
-            var height = this._text.height;
-            var size = this._text.size;
-            var lineSpacing = this._text.lineSpacing;
-            this._showLine = Math.floor(height / (size + lineSpacing));
-            var leftH = height - (size + lineSpacing) * this._showLine;
-            if (leftH > size / 2) {
-                this._showLine++;
+            if (self._text._multiline) {
+                var height = this._text.height;
+                var size = this._text.size;
+                var lineSpacing = this._text.lineSpacing;
+                this._showLine = Math.floor(height / (size + lineSpacing));
+                var leftH = height - (size + lineSpacing) * this._showLine;
+                if (leftH > size / 2) {
+                    this._showLine++;
+                }
+            }
+            else {
+                this._showLine = 1;
             }
 
-            this._text._inputIndex = this._text.text.length;
-            this._text._inputScrollX = 0;
-            this._text._scrollV = 0;
             this._text._isTyping = true;
             var lineArr = this._text._getLinesArr();
             this._text.scrollV = lineArr.length - this._showLine + 1;

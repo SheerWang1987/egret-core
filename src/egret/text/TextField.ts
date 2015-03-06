@@ -872,7 +872,7 @@ module egret {
                 var h:number = line.height;
                 drawY += h / 2;
                 drawX = Math.round((maxWidth - line.width) * halign);
-                if (i != 0 && self._hasHeightSet && drawY > self._explicitHeight) {
+                if (i != startLine && self._hasHeightSet && drawY > self._explicitHeight) {
                     break;
                 }
 
@@ -927,8 +927,13 @@ module egret {
                 var inputDrawX:number = 0;
                 var i:number = startLine;
                 for (var numLinesLength:number = self._numLines; i < numLinesLength; i++) {
-                    if (i != 0 && self._hasHeightSet && drawY + self._size + self._lineSpacing > self._explicitHeight) {
-                        break;
+                    if (i != startLine) {
+                        if (!self._multiline) {
+                            break;
+                        }
+                        else if (self._hasHeightSet && drawY + self._size + self._lineSpacing > self._explicitHeight) {
+                            break;
+                        }
                     }
                     var line:egret.ILineElement = lines[i];
                     drawY += self._size + self._lineSpacing;

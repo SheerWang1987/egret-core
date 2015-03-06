@@ -719,6 +719,7 @@ module egret {
                 var text:string = element.text.toString();
                 var textArr:Array<string> = text.split(/(?:\r\n|\r|\n)/);
 
+                var isLastAutoEnter:boolean = false;
                 for (var j:number = 0, textArrLength:number = textArr.length; j < textArrLength; j++) {
                     if (linesArr[lineCount] == null) {
                         lineElement = <egret.ILineElement>{width:0, height:0, elements:[]};
@@ -726,6 +727,10 @@ module egret {
                         lineW = 0;
                         lineH = 0;
                         lineCharNum = 0;
+
+                        if (linesArr.length > 1 && !isLastAutoEnter) {
+                            lineCharNum++;
+                        }
                     }
 
                     if (self._type == egret.TextFieldType.INPUT) {
@@ -735,9 +740,8 @@ module egret {
                         lineH = Math.max(lineH, element.style.size || self._size);
                     }
 
-
                     if (textArr[j] == "") {
-
+                        isLastAutoEnter = false;
                     }
                     else {
                         if (self._isFlow) {
@@ -748,12 +752,14 @@ module egret {
                             lineW += w;
                             lineCharNum += textArr[j].length;
                             lineElement.elements.push(<egret.IWTextElement>{width:w, text:textArr[j], style:element.style});
+                            isLastAutoEnter = false;
                         }
                         else {
                             if (lineW + w <= self._explicitWidth) {//在设置范围内
                                 lineElement.elements.push(<egret.IWTextElement>{width:w, text:textArr[j], style:element.style});
                                 lineW += w;
                                 lineCharNum += textArr[j].length;
+                                isLastAutoEnter = false;
                             }
                             else {
                                 var k:number = 0;
@@ -776,6 +782,7 @@ module egret {
                                 }
 
                                 j--;
+                                isLastAutoEnter = true;
                             }
                         }
                     }
@@ -783,6 +790,7 @@ module egret {
                     if (j < textArr.length - 1) {//非最后一个
                         lineElement.width = lineW;
                         lineElement.height = lineH;
+                        lineElement.charNum = lineCharNum;
                         self._textMaxWidth = Math.max(self._textMaxWidth, lineW);
                         self._textMaxHeight += lineH;
 
@@ -792,11 +800,14 @@ module egret {
                         //}
                         lineCount++;
                     }
+
+
                 }
 
                 if (i == text2Arr.length - 1 && lineElement) {
                     lineElement.width = lineW;
                     lineElement.height = lineH;
+                    lineElement.charNum = lineCharNum;
                     self._textMaxWidth = Math.max(self._textMaxWidth, lineW);
                     self._textMaxHeight += lineH;
                 }
@@ -912,7 +923,10 @@ module egret {
             var drawX:number = 0;
             if (self._type == egret.TextFieldType.INPUT) {
                 drawY -= self._size / 2 + self._lineSpacing;
-                for (var i:number = startLine, numLinesLength:number = self._numLines; i < numLinesLength; i++) {
+                var inputDrawY:number = drawY;
+                var inputDrawX:number = 0;
+                var i:number = startLine;
+                for (var numLinesLength:number = self._numLines; i < numLinesLength; i++) {
                     if (i != 0 && self._hasHeightSet && drawY + self._size + self._lineSpacing > self._explicitHeight) {
                         break;
                     }
@@ -920,8 +934,8 @@ module egret {
                     drawY += self._size + self._lineSpacing;
                     drawX = Math.round((maxWidth - line.width) * halign);
 
-                    for (var j:number = 0, elementsLength:number = line.elements.length; j < elementsLength; j++) {
-                        var element:egret.IWTextElement = line.elements[j];
+                    if (line.elements.length) {
+                        var element:egret.IWTextElement = line.elements[0];
 
                         renderContext.drawText(self, element.text, drawX, drawY, element.width);
                         drawX += element.width;
@@ -931,7 +945,37 @@ module egret {
                 if (self._isTyping) {
                     var now = Date.now();
                     if (now - self._inputDelay < 500) {
-                        renderContext.drawText(self, "|", drawX, drawY, 99,
+                        var selectEnd:number = Math.max(self._text.length, 0);
+
+                        var scrollX:number = 0;
+                        var scrollY:number = 0;
+
+                        for (var i:number = 0, length:number = lines.length; i < length; i++) {
+                            var charNum:number = lines[i].charNum;
+                            if (selectEnd - charNum <= 0) {
+                                var tempLine:ILineElement = lines[i];
+                                var element:egret.IWTextElement = tempLine.elements[0];
+                                if (element) {
+                                    selectEnd = selectEnd - (charNum - element.text.length);
+
+                                    var text:string = element.text.substr(0, selectEnd);
+                                    scrollX = renderContext.measureText(text);
+                                }
+                                else {
+                                    selectEnd = selectEnd - (charNum - 0);
+                                }
+                                inputDrawX = Math.round((maxWidth - tempLine.width) * halign);
+                                inputDrawX += scrollX;
+
+                                scrollY = i + 1;
+                                inputDrawY += (self._size + self._lineSpacing) * (scrollY - startLine);
+                                break;
+                            }
+
+                            selectEnd -= charNum;
+                        }
+
+                        renderContext.drawText(self, "|", inputDrawX, inputDrawY, 99,
                             {textColor:0x000000});
                     }
                     else if (now - self._inputDelay > 1000) {
@@ -1025,56 +1069,6 @@ module egret {
 
             return null;
         }
-    }
-
-    /**
-     * @private
-     */
-    export interface IHitTextElement {
-        lineIndex:number;
-        textElementIndex:number;
-    }
-
-
-    /**
-     * @private
-     */
-    export interface ITextStyle {
-        textColor?:number;
-        strokeColor?:number;
-        size?:number;
-        stroke?:number;
-        bold?:boolean;
-        italic?:boolean;
-        fontFamily?:string;
-        href?:string;
-    }
-
-    /**
-     * 用于建立多种样式混合文本的基本结构，主要用于设置 textFlow 属性
-     * @link http://docs.egret-labs.org/jkdoc/manual-text-multiformat.html 多种样式文本混合
-     */
-    export interface ITextElement {
-        text:string;
-        style?:ITextStyle;
-    }
-
-    /**
-     * @private
-     */
-    export interface IWTextElement extends ITextElement {
-        width:number;
-    }
-
-    /**
-     * @private
-     */
-    export interface ILineElement {
-        width:number;
-        height:number;
-        charNum:number;
-
-        elements:Array<IWTextElement>;
     }
 
 }

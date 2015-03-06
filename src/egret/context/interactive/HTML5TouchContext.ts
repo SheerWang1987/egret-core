@@ -46,8 +46,8 @@ module egret {
 
         private prevent(event):void {
             event.stopPropagation();
-            if (event["isScroll"] != true) {
-                //event.preventDefault();
+            if (event["isScroll"] != true && !HTMLInput.getInstance().isInputOn()) {
+                event.preventDefault();
             }
         }
 

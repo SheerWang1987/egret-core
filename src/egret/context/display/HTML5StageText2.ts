@@ -65,20 +65,29 @@ module egret {
 
         public _show(multiline:boolean, size:number, width:number, height:number):void {
             this._multiline = multiline;
-            this.inputElement = HTMLInput.getInstance().getInputElement(this);
-            this.inputDiv = this.inputElement.parentNode;
+            if (!HTMLInput.getInstance().isCurrentStageText(this)) {
+                this.inputElement = HTMLInput.getInstance().getInputElement(this);
+                this.inputDiv = this.inputElement.parentNode;
+                this.inputElement.style.width = 1 + "px";
+                this.inputElement.style.height = height + "px";
 
-            this.inputElement.style.width = 1 + "px";
-            this.inputElement.style.height = height + "px";
-
-            if (this._maxChars > 0) {
-                this.inputElement.setAttribute("maxlength", this._maxChars);
+                if (this._maxChars > 0) {
+                    this.inputElement.setAttribute("maxlength", this._maxChars);
+                }
+                else {
+                    this.inputElement.removeAttribute("maxlength");
+                }
             }
             else {
-                this.inputElement.removeAttribute("maxlength");
+                this.inputElement.onblur = null;
             }
 
             this._isNeedShow = true;
+        }
+
+        private onBlurHandler():void {
+            HTMLInput.getInstance().clearInputElement();
+            window.scrollTo(0, 0);
         }
 
         private executeShow():void {
@@ -87,12 +96,17 @@ module egret {
             this.inputElement.value = txt;
             var self = this;
 
+            if (this.inputElement.onblur == null) {
+                this.inputElement.onblur = this.onBlurHandler;
+            }
+
             this.inputElement.focus();
             this.inputElement.selectionStart = txt.length;
             this.inputElement.selectionEnd = txt.length;
         }
 
         private _isNeesHide:boolean = false;
+
         public _hide():void {
             //this._isNeesHide = true;
             //
@@ -168,6 +182,15 @@ module egret {
         private _stageText:HTML5StageText;
         private _inputElement:any;
         private _inputDIV:any;
+
+        public isInputOn():boolean {
+            return this._stageText != null;
+        }
+
+        public isCurrentStageText(stageText):boolean {
+            return this._stageText == stageText;
+        }
+
         private initStageDelegateDiv():any {
             var stageDelegateDiv = egret.Browser.getInstance().$("#StageDelegateDiv");
             if (!stageDelegateDiv) {
@@ -215,7 +238,7 @@ module egret {
 
                 //完全隐藏输入框///////////////////////////
                 //隐藏光标
-                inputElement.style.fontSize = 0 + "px";
+                inputElement.style.fontSize = 1 + "px";
                 //隐藏输入框
                 inputElement.style.opacity = 0;
                 //////////////////////////////////////
@@ -236,22 +259,6 @@ module egret {
                     }
                 };
 
-                inputElement.onblur = function() {
-                    if (self._stageText) {
-                        self.clearInputElement();
-
-                        inputElement.style.height = "12px";
-                        inputElement.style.left = "0px";
-                        inputElement.style.top = "0px";
-
-                        self._inputDIV.position.x = 0;
-                        self._inputDIV.position.y = -100;
-                        self._inputDIV.transforms();
-
-                        window.scrollTo(0, 0);
-                    }
-                };
-
                 var self = this;
                 self._inputElement = inputElement;
                 container.addEventListener("click", function (e) {
@@ -260,6 +267,11 @@ module egret {
                     }
                 });
             }
+        }
+
+        public initInput():void {
+
+            HTMLInput.getInstance().clearInputElement();
         }
 
         public disconnectStageText(stageText):void {
@@ -273,6 +285,16 @@ module egret {
         public clearInputElement():void {
             if (this._inputElement) {
                 this._inputElement.value = "";
+
+                this._inputElement.onblur = null;
+
+                this._inputElement.style.height = "12px";
+                this._inputElement.style.left = "0px";
+                this._inputElement.style.top = "0px";
+
+                this._inputDIV.position.x = 0;
+                this._inputDIV.position.y = -100;
+                this._inputDIV.transforms();
             }
 
             if (this._stageText) {
@@ -290,6 +312,7 @@ module egret {
         }
 
         private header:string = "";
+
         /**
          * 获取当前浏览器类型
          * @type {string}
@@ -320,6 +343,7 @@ module egret {
         }
 
         private static _instance:HTMLInput;
+
         public static getInstance():HTMLInput {
             if (HTMLInput._instance == null) {
                 HTMLInput._instance = new egret.HTMLInput();
@@ -333,6 +357,6 @@ module egret {
     }
 }
 
-egret.StageText.create = function(){
+egret.StageText.create = function () {
     return new egret.HTML5StageText();
 };

@@ -77,7 +77,7 @@ module egret {
 
         }
 
-        public _show(multiline:boolean, size:number, width:number, height:number):void {
+        public _show(multiline:boolean, size:number, width:number, height:number, oppositeSelectionEnd:number):void {
 
         }
 

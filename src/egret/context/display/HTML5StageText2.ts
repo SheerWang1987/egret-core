@@ -63,8 +63,10 @@ module egret {
             this.inputDiv.transforms();
         }
 
-        public _show(multiline:boolean, size:number, width:number, height:number):void {
+        private _oppositeSelectionEnd:number = 0;
+        public _show(multiline:boolean, size:number, width:number, height:number, oppositeSelectionEnd:number):void {
             this._multiline = multiline;
+            this._oppositeSelectionEnd = oppositeSelectionEnd;
             if (!HTMLInput.getInstance().isCurrentStageText(this)) {
                 this.inputElement = HTMLInput.getInstance().getInputElement(this);
                 this.inputDiv = this.inputElement.parentNode;
@@ -101,8 +103,8 @@ module egret {
             }
 
             this.inputElement.focus();
-            this.inputElement.selectionStart = txt.length;
-            this.inputElement.selectionEnd = txt.length;
+            this.inputElement.selectionStart = this.inputElement.value.length - this._oppositeSelectionEnd;
+            this.inputElement.selectionEnd = this.inputElement.value.length - this._oppositeSelectionEnd;
         }
 
         private _isNeesHide:boolean = false;
@@ -144,14 +146,25 @@ module egret {
             }
         }
 
-        public onInput():void {
+        public onInput(isBack:boolean):void {
             var self = this;
             if (!self._multiline && self.inputElement.value.match(/\r|\n/)) {
                 self.inputElement.value = self.inputElement.value.replace(/\r|\n/g, "");
+
+                self.inputElement.selectionStart = Math.min(self.inputElement.selectionStart, self.inputElement.value.length - self._oppositeSelectionEnd);
+                self.inputElement.selectionEnd = self.inputElement.value.length - self._oppositeSelectionEnd;
             }
 
             self.textValue = self.inputElement.value;
-            self.dispatchEvent(new egret.Event("updateText"));
+
+            egret.Event.dispatchEvent(self, "updateText", false, {"isBack":isBack});
+            //self.dispatchEvent(new egret.Event("updateText"));
+        }
+
+        public onDirectionKeyHandler(e):void {
+            var self = this;
+            self.inputElement.selectionStart = Math.min(self.inputElement.selectionStart, self.inputElement.value.length - self._oppositeSelectionEnd);
+            self.inputElement.selectionEnd = self.inputElement.value.length - self._oppositeSelectionEnd;
         }
 
         public onClickHandler(e):void {
@@ -252,19 +265,19 @@ module egret {
                 inputElement.style.opacity = 0;
                 //////////////////////////////////////
 
+                var isBack:boolean;
                 inputElement.onkeyup = function (e) {
+                    isBack = e.keyCode == 8;
                     if (self._stageText) {
                         if (e.keyCode >= 37 && e.keyCode <= 40) {
-                            //self._stageText.onInput();
-                            inputElement.selectionStart = inputElement.value.length;
-                            inputElement.selectionEnd = inputElement.value.length;
+                            self._stageText.onDirectionKeyHandler(e);
                         }
                     }
                 };
 
                 inputElement.oninput = function () {
                     if (self._stageText) {
-                        self._stageText.onInput();
+                        self._stageText.onInput(isBack);
                     }
                 };
 

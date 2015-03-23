@@ -33,6 +33,7 @@ module egret {
 
         private _text:TextField = null;
 
+        private _isFocus:boolean = false;
         public constructor() {
             super();
         }
@@ -88,8 +89,9 @@ module egret {
         private blurHandler(event:Event):void {
             //不再显示竖线，并且输入框显示最开始
 
+            this._isFocus = false;
             this._text._isTyping = false;
-            this._text.scrollV = 0;
+            this._text._scrollV = 0;
         }
 
         private _showLine:number = 1;
@@ -102,26 +104,37 @@ module egret {
                 return;
             }
 
-            if (self._text._multiline) {
-                var height = this._text.height;
-                var size = this._text.size;
-                var lineSpacing = this._text.lineSpacing;
-                this._showLine = Math.floor(height / (size + lineSpacing));
-                var leftH = height - (size + lineSpacing) * this._showLine;
-                if (leftH > size / 2) {
-                    this._showLine++;
-                }
-            }
-            else {
-                this._showLine = 1;
-            }
+            this._showLine = this._text._getScrollNum();
+            //if (self._text._multiline) {
+            //    var height = this._text.height;
+            //    var size = this._text.size;
+            //    var lineSpacing = this._text.lineSpacing;
+            //    this._showLine = Math.floor(height / (size + lineSpacing));
+            //    var leftH = height - (size + lineSpacing) * this._showLine;
+            //    if (leftH > size / 2) {
+            //        this._showLine++;
+            //    }
+            //}
+            //else {
+            //    this._showLine = 1;
+            //}
 
             this._text._isTyping = true;
-            var lineArr = this._text._getLinesArr();
-            this._text.scrollV = lineArr.length - this._showLine + 1;
 
-            //强制更新输入框位置
-            this.stageText._show(this._text._multiline, this._text.size, this._text.width, this._text.height);
+
+            if (!this._isFocus) {
+                this._isFocus = true;
+                this._text._oppositeSelectionEnd = 0;
+            }
+            else {
+                var selectionEnd = this._text._getHitIndex(event.localX, event.localY);
+                this._text._oppositeSelectionEnd = this._text._text.length - selectionEnd;
+            }
+            this._text._scrollV = this._text._getSelectionScrollV(this._text._oppositeSelectionEnd, false);
+
+
+                //强制更新输入框位置
+            this.stageText._show(this._text._multiline, this._text.size, this._text.width, this._text.height, this._text._oppositeSelectionEnd);
 
             var point = this._text.localToGlobal();
             this.stageText._initElement(point.x, point.y, self._text._worldTransform.a, self._text._worldTransform.d);
@@ -132,11 +145,11 @@ module egret {
             this.stageText._hide();
         }
 
-        private updateTextHandler(event):void {
+        private updateTextHandler(event:Event):void {
             this.resetText();
 
-            var lineArr = this._text._getLinesArr();
-            this._text.scrollV = lineArr.length - this._showLine + 1;
+            this._text._getLinesArr();
+            this._text._scrollV = this._text._getSelectionScrollV(this._text._oppositeSelectionEnd, event.data ? event.data.isBack : false);
 
             //抛出change事件
             this._text.dispatchEvent(new egret.Event(egret.Event.CHANGE));

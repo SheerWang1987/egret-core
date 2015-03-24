@@ -514,6 +514,76 @@ module egret {
             return this._multiline;
         }
 
+        public _setWidth(value:number):void {
+            super._setWidth(value);
+
+            this.fillBackground();
+        }
+
+        public _setHeight(value:number):void {
+            super._setHeight(value);
+
+            this.fillBackground();
+        }
+
+        private _graphics:Graphics = null;
+        public _border:boolean = false;
+        public set border(value:boolean) {
+            this._border = value;
+            this.fillBackground();
+        }
+        public get border():boolean {
+            return this._border;
+        }
+
+        public _borderColor:number = 0x000000;
+        public set borderColor(value:number) {
+            this._borderColor = value;
+            this.fillBackground();
+        }
+        public get borderColor():number {
+            return this._borderColor;
+        }
+
+        public _background:boolean = false;
+        public set background(value:boolean) {
+            this._background = value;
+            this.fillBackground();
+        }
+        public get background():boolean {
+            return this._background;
+        }
+
+
+        public _backgroundColor:number = 0x000000;
+        public set backgroundColor(value:number) {
+            this._backgroundColor = value;
+            this.fillBackground();
+        }
+
+        public get backgroundColor():number {
+            return this._backgroundColor;
+        }
+
+        private fillBackground():void {
+            if (this._graphics) {
+                this._graphics.clear();
+            }
+            if (this._background || this._border) {
+                if (this._graphics == null) {
+                    this._graphics = new egret.Graphics();
+                }
+                if (this._background) {
+                    this._graphics.beginFill(this._backgroundColor, 1);
+                }
+                if (this._border) {
+                    this._graphics.lineStyle(1, this._borderColor);
+                }
+                this._graphics.drawRect(0, 0, this._getWidth(), this._getHeight());
+                this._graphics.endFill();
+            }
+        }
+
         public setFocus() {
             //todo:
             Logger.warningWithErrorId(1013);
@@ -570,9 +640,11 @@ module egret {
 
         public _draw(renderContext:RendererContext):void {
             var self = this;
+
             if (self._textMaxWidth == 0 && self._type != TextFieldType.INPUT) {
                 return;
             }
+
 
             super._draw(renderContext);
         }
@@ -582,6 +654,9 @@ module egret {
          * @param renderContext
          */
         public _render(renderContext:RendererContext):void {
+            if(this._graphics)
+                this._graphics._draw(renderContext);
+
             this.drawText(renderContext);
 
             this._clearDirty();
@@ -902,7 +977,7 @@ module egret {
             var lines:Array<egret.ILineElement> = self._getLinesArr();
 
             var maxWidth:number = self._hasWidthSet ? self._explicitWidth : self._textMaxWidth;
-            var textHeight:number = self._textMaxHeight + (self._numLines - 1) * self._lineSpacing;
+            var textHeight:number = self._multiline ? self._textMaxHeight + (self._numLines - 1) * self._lineSpacing : self._size;
 
             var drawY:number = 0;
             var startLine:number = 0;
@@ -919,6 +994,11 @@ module egret {
                     startLine = Math.max(self._scrollV - 1, 0);
                     startLine = Math.min(self._numLines - 1, startLine);
                 }
+
+                if (!self._multiline) {
+                    startLine = Math.max(self._scrollV - 1, 0);
+                    startLine = Math.min(self._numLines - 1, startLine);
+                }
             }
 
             drawY = Math.round(drawY);
@@ -929,6 +1009,11 @@ module egret {
             else if (self._textAlign == HorizontalAlign.RIGHT) {
                 halign = 1;
             }
+
+            if (!self._multiline && lines.length > 1) {
+                halign = 0;
+            }
+
             var drawX:number = 0;
             if (self._type == egret.TextFieldType.INPUT) {
                 drawY -= self._size / 2 + self._lineSpacing;
@@ -959,11 +1044,9 @@ module egret {
                 if (self._isTyping) {
                     var now = Date.now();
                     if (now - self._inputDelay < 500) {
-                        //var selectEnd:number = Math.max(self._text.length, 0);
                         var selectEnd:number = self._text.length - self._oppositeSelectionEnd;
 
                         var scrollX:number = 0;
-                        var scrollY:number = 0;
 
                         inputDrawY += (self._size + self._lineSpacing);
 
@@ -973,7 +1056,7 @@ module egret {
                             var hasNextLine:boolean = tempLine.hasNextLine;
                             if ((hasNextLine && selectEnd < charNum)//有换行
                                 || (!hasNextLine && selectEnd <= charNum) //无换行
-                               ){
+                            ){
                                 var element:egret.IWTextElement = tempLine.elements[0];
                                 if (element) {
                                     var text:string = element.text.substr(0, selectEnd);
@@ -985,8 +1068,9 @@ module egret {
                                 inputDrawX = Math.round((maxWidth - tempLine.width) * halign);
                                 inputDrawX += scrollX;
 
-                                scrollY = i;
-                                inputDrawY += (self._size + self._lineSpacing) * (scrollY - startLine);
+                                if (self._multiline) {
+                                    inputDrawY += (self._size + self._lineSpacing) * (i - startLine);
+                                }
                                 break;
                             }
                             selectEnd -= charNum;
@@ -994,8 +1078,6 @@ module egret {
 
                         renderContext.drawCursor(inputDrawX , (inputDrawY - self._size / 2),
                             inputDrawX, (inputDrawY + self._size / 2));
-                        //renderContext.drawText(self, "|", inputDrawX, inputDrawY, 99,
-                        //    {textColor:0x000000});
                     }
                     else if (now - self._inputDelay > 1000) {
                         self._inputDelay = now;
@@ -1107,16 +1189,16 @@ module egret {
             var line:number = -1;
             var lineH:number = 0;
             var startLine:number = Math.max(self._scrollV - 1, 0);
+            var startY:number = this.getStartY(this.getValign());
             var scrollNum:number = this._getScrollNum();
             var i:number = 0;
             for (; i < lineArr.length && i < scrollNum + startLine; i++) {
                 var lineEle:egret.ILineElement = lineArr[i];
 
                 if (i < startLine) {
-                    //lineH += lineEle.height + this._lineSpacing;
                 }
                 else {
-                    if (lineH + lineEle.height >= y) {
+                    if (lineH + lineEle.height + startY >= y) {
                         line = i;
                         break;
                     }
@@ -1124,7 +1206,7 @@ module egret {
                         lineH += lineEle.height;
                     }
 
-                    if (lineH + this._lineSpacing >= y) {
+                    if (lineH + this._lineSpacing + startY >= y) {
                         line = i;
                         break;
                     }
@@ -1135,7 +1217,6 @@ module egret {
                 }
                 else {
                     idx += lineEle.charNum;
-                    //lineH += this._lineSpacing;
                 }
             }
 
@@ -1144,6 +1225,7 @@ module egret {
             }
 
             var lineEle:egret.ILineElement = lineArr[line];
+            var startWidth:number = this.getStartXAtLine(line, this.getHalign());
 
             var rendererContext = egret.MainContext.instance.rendererContext;
             rendererContext.setupFont(this);
@@ -1160,7 +1242,7 @@ module egret {
                     var lineW:number = 0;
                     for (var j = 0; j < iwTE.text.length; j++) {
                         var w:number = rendererContext.measureText(iwTE.text.charAt(j));
-                        if (lineW + w / 2 > x) {//在半个字前面
+                        if (lineW + w / 2 + startWidth > x) {//在半个字前面
                             break;
                         }
                         else {
@@ -1196,6 +1278,11 @@ module egret {
             else if (self._textAlign == HorizontalAlign.RIGHT) {
                 halign = 1;
             }
+
+            if (!self._multiline && self._linesArr.length > 1) {
+                halign = 0;
+            }
+
             return halign;
         }
 
@@ -1227,7 +1314,7 @@ module egret {
          */
         private getStartY(valign:number):number {
             var self = this;
-            var textHeight:number = self._textMaxHeight + (self._numLines - 1) * self._lineSpacing;
+            var textHeight:number = self._multiline ? self._textMaxHeight + (self._numLines - 1) * self._lineSpacing : self._size;
             if (self._hasHeightSet && textHeight < self._explicitHeight) {
                 return valign * (self._explicitHeight - textHeight);
             }
@@ -1237,7 +1324,7 @@ module egret {
         }
         private getValign():number{
             var self = this;
-            var textHeight:number = self._textMaxHeight + (self._numLines - 1) * self._lineSpacing;
+            var textHeight:number = self._multiline ? self._textMaxHeight + (self._numLines - 1) * self._lineSpacing : self._size;
 
             if (self._hasHeightSet) {//
                 if (textHeight < self._explicitHeight) {//最大高度比需要显示的高度小

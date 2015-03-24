@@ -252,7 +252,10 @@ module egret {
                 //完全隐藏输入框///////////////////////////
                 //隐藏光标  ios 0   pc 1
                 var userAgent:string = navigator.userAgent;
-                if (userAgent.indexOf("Mac OS X") >= 0 || userAgent.indexOf("Android") >= 0) {
+                if (userAgent.indexOf("iPhone OS") >= 0) {
+                    inputElement.style.fontSize = 0 + "px";
+                }
+                else if (userAgent.indexOf("Mac OS X") >= 0 || userAgent.indexOf("Android") >= 0) {
                     inputElement.style.fontSize = 12 + "px";
                 }
                 else if (userAgent.indexOf("Windows") >= 0 && userAgent.indexOf("IEMobile") < 0 ) {

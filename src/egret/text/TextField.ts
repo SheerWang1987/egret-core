@@ -589,9 +589,13 @@ module egret {
             Logger.warningWithErrorId(1013);
         }
 
+        public _properties:TextFieldProperties;
+
         constructor() {
             super();
             this.needDraw = true;
+
+            this._properties = new egret.TextFieldProperties();
         }
 
         public _onRemoveFromStage():void {
@@ -621,6 +625,11 @@ module egret {
             }
 
             super._updateTransform();
+
+            var matrix = this._worldTransform;
+            if (this._linesArr.length >= 2) {
+                console.log("_updateTransform matrix.a=" + matrix.a + "matrix.b=" + matrix.b + "matrix.c=" + matrix.c+ " matrix.d=" +  matrix.d + "matrix.tx=" + matrix.tx + "matrix.ty=" + matrix.ty)
+            }
         }
 
         public _updateTransform():void {
@@ -899,8 +908,6 @@ module egret {
             return linesArr;
         }
 
-        public _inputIndex:number = -1;//输入框竖线idx
-        public _inputScrollX:number = 0;
         public _isTyping:boolean = false;
         /**
          * @private
@@ -909,147 +916,69 @@ module egret {
          */
         private drawText(renderContext:RendererContext):void {
             var self = this;
-            if (self._type == TextFieldType.INPUT) {
-                self.drawInput(renderContext);
-                return;
-            }
             var lines:Array<egret.ILineElement> = self._getLinesArr();
+
             if (self._textMaxWidth == 0) {
+                self.drawCursor(renderContext);
                 return;
             }
-
 
             var maxWidth:number = self._hasWidthSet ? self._explicitWidth : self._textMaxWidth;
-            var textHeight:number = self._textMaxHeight + (self._numLines - 1) * self._lineSpacing;
+            var textHeight:number = self._multiline ? self._textMaxHeight + (self._numLines - 1) * self._lineSpacing : self._size;
 
             var drawY:number = 0;
-            var startLine:number = 0;
-            if (self._hasHeightSet) {//
-                if (textHeight < self._explicitHeight) {//最大高度比需要显示的高度小
-                    var valign:number = 0;
-                    if (self._verticalAlign == VerticalAlign.MIDDLE)
-                        valign = 0.5;
-                    else if (self._verticalAlign == VerticalAlign.BOTTOM)
-                        valign = 1;
-                    drawY += valign * (self._explicitHeight - textHeight);
-                }
-                else if (textHeight > self._explicitHeight) {//最大高度比需要显示的高度大
-                    startLine = Math.max(self._scrollV - 1, 0);
-                    startLine = Math.min(self._numLines - 1, startLine);
-                }
+            var startLine:number = TextFieldUtils._getStartLine(this);
+            var valign:number = TextFieldUtils._getValign(this);
+            if (self._hasHeightSet) {
+                drawY += valign * (self._explicitHeight - textHeight);
             }
-
             drawY = Math.round(drawY);
-            var halign:number = 0;
-            if (self._textAlign == HorizontalAlign.CENTER) {
-                halign = 0.5;
-            }
-            else if (self._textAlign == HorizontalAlign.RIGHT) {
-                halign = 1;
-            }
+            var halign:number = TextFieldUtils._getHalign(self);
 
             var drawX:number = 0;
             for (var i:number = startLine, numLinesLength:number = self._numLines; i < numLinesLength; i++) {
                 var line:egret.ILineElement = lines[i];
                 var h:number = line.height;
                 drawY += h / 2;
-                drawX = Math.round((maxWidth - line.width) * halign);
-                if (i != startLine && self._hasHeightSet && drawY > self._explicitHeight) {
-                    break;
+                if (i != startLine) {
+                    if (self._type == egret.TextFieldType.INPUT && !self._multiline) {
+                        break;
+                    }
+                    if (self._hasHeightSet && drawY > self._explicitHeight) {
+                        break;
+                    }
                 }
 
+                drawX = Math.round((maxWidth - line.width) * halign);
                 for (var j:number = 0, elementsLength:number = line.elements.length; j < elementsLength; j++) {
                     var element:egret.IWTextElement = line.elements[j];
                     var size:number = element.style.size || self._size;
+
+                    if (numLinesLength >= 2) {
+                        console.log("_updateTransform "+ "element.text=" + element.text + " drawX=" + drawX + "drawY="  + (drawY + (h - size) / 2));
+                    }
 
                     renderContext.drawText(self, element.text, drawX, drawY + (h - size) / 2, element.width, element.style);
                     drawX += element.width;
                 }
                 drawY += h / 2 + self._lineSpacing;
             }
-
+            self.drawCursor(renderContext);
         }
 
-
         public _oppositeSelectionEnd:number = 0;
-        private drawInput(renderContext:RendererContext):void {
+        private drawCursor(renderContext:RendererContext):void {
             var self = this;
-            var lines:Array<egret.ILineElement> = self._getLinesArr();
-
-            var maxWidth:number = self._hasWidthSet ? self._explicitWidth : self._textMaxWidth;
-            var textHeight:number = self._multiline ? self._textMaxHeight + (self._numLines - 1) * self._lineSpacing : self._size;
-
-            var drawY:number = 0;
-            var startLine:number = 0;
-            if (self._hasHeightSet) {//
-                if (textHeight < self._explicitHeight) {//最大高度比需要显示的高度小
-                    var valign:number = 0;
-                    if (self._verticalAlign == VerticalAlign.MIDDLE)
-                        valign = 0.5;
-                    else if (self._verticalAlign == VerticalAlign.BOTTOM)
-                        valign = 1;
-                    drawY += valign * (self._explicitHeight - textHeight);
-                }
-                else if (textHeight > self._explicitHeight) {//最大高度比需要显示的高度大
-                    startLine = Math.max(self._scrollV - 1, 0);
-                    startLine = Math.min(self._numLines - 1, startLine);
-                }
-
-                if (!self._multiline) {
-                    startLine = Math.max(self._scrollV - 1, 0);
-                    startLine = Math.min(self._numLines - 1, startLine);
-                }
-            }
-
-            drawY = Math.round(drawY);
-            var halign:number = 0;
-            if (self._textAlign == HorizontalAlign.CENTER) {
-                halign = 0.5;
-            }
-            else if (self._textAlign == HorizontalAlign.RIGHT) {
-                halign = 1;
-            }
-
-            if (!self._multiline && lines.length > 1) {
-                halign = 0;
-            }
-
-            var drawX:number = 0;
             if (self._type == egret.TextFieldType.INPUT) {
-                drawY -= self._size / 2 + self._lineSpacing;
-                var inputDrawY:number = drawY;
-                var inputDrawX:number = 0;
-                var i:number = startLine;
-                for (var numLinesLength:number = self._numLines; i < numLinesLength; i++) {
-                    if (i != startLine) {
-                        if (!self._multiline) {
-                            break;
-                        }
-                        else if (self._hasHeightSet && drawY + self._size + self._lineSpacing > self._explicitHeight) {
-                            break;
-                        }
-                    }
-                    var line:egret.ILineElement = lines[i];
-                    drawY += self._size + self._lineSpacing;
-                    drawX = Math.round((maxWidth - line.width) * halign);
-
-                    if (line.elements.length) {
-                        var element:egret.IWTextElement = line.elements[0];
-
-                        renderContext.drawText(self, element.text, drawX, drawY, element.width);
-                        drawX += element.width;
-                    }
-                }
-
                 if (self._isTyping) {
+                    var lines:Array<egret.ILineElement> = self._getLinesArr();
+
                     var now = Date.now();
                     if (now - self._inputDelay < 500) {
                         var selectEnd:number = self._text.length - self._oppositeSelectionEnd;
 
                         var scrollX:number = 0;
-
-                        inputDrawY += (self._size + self._lineSpacing);
-
+                        var line:number = 0;
                         for (var i:number = 0, length:number = lines.length; i < length; i++) {
                             var tempLine:ILineElement = lines[i];
                             var charNum:number = tempLine.charNum;
@@ -1062,22 +991,16 @@ module egret {
                                     var text:string = element.text.substr(0, selectEnd);
                                     scrollX = renderContext.measureText(text);
                                 }
-                                else {
-                                    selectEnd = selectEnd - charNum;
-                                }
-                                inputDrawX = Math.round((maxWidth - tempLine.width) * halign);
-                                inputDrawX += scrollX;
-
-                                if (self._multiline) {
-                                    inputDrawY += (self._size + self._lineSpacing) * (i - startLine);
-                                }
+                                line = i;
                                 break;
                             }
                             selectEnd -= charNum;
                         }
 
-                        renderContext.drawCursor(inputDrawX , (inputDrawY - self._size / 2),
-                            inputDrawX, (inputDrawY + self._size / 2));
+                        var inputDrawX:number = TextFieldUtils._getStartXAtLine(this, line, TextFieldUtils._getHalign(this));
+                        var inputDrawY:number = TextFieldUtils._getStartYAtLine(this, line, TextFieldUtils._getValign(this));
+                        renderContext.drawCursor(inputDrawX + scrollX, (inputDrawY),
+                            inputDrawX + scrollX, (inputDrawY + self._size));
                     }
                     else if (now - self._inputDelay > 1000) {
                         self._inputDelay = now;
@@ -1101,7 +1024,7 @@ module egret {
             if (this._type == egret.TextFieldType.INPUT) {
                 return;
             }
-            var ele:ITextElement = this._getTextElement(e.localX, e.localY);
+            var ele:ITextElement = TextFieldUtils._getTextElement(this, e.localX, e.localY);
             if (ele == null) {
                 return;
             }
@@ -1116,284 +1039,6 @@ module egret {
 
                 }
             }
-        }
-
-        public _getTextElement(x:number, y:number):ITextElement {
-            var hitTextEle:IHitTextElement = this._getHit(x, y);
-
-            var lineArr:Array<egret.ILineElement>  = this._getLinesArr();
-            if (hitTextEle && lineArr[hitTextEle.lineIndex] && lineArr[hitTextEle.lineIndex].elements[hitTextEle.textElementIndex]) {
-                return lineArr[hitTextEle.lineIndex].elements[hitTextEle.textElementIndex];
-            }
-            return null;
-        }
-
-        private _getHit(x:number, y:number):IHitTextElement {
-            var lineArr:Array<egret.ILineElement>  = this._getLinesArr();
-            if (this._textMaxWidth == 0) {//文本可点击区域
-                return null;
-            }
-            var line:number = 0;
-
-            var lineH:number = 0;
-            for (var i:number = 0; i < lineArr.length; i++) {
-                var lineEle:egret.ILineElement = lineArr[i];
-                if (lineH + lineEle.height >= y) {
-                    line = i + 1;
-                    break;
-                }
-                else {
-                    lineH += lineEle.height;
-                }
-
-                if (lineH + this._lineSpacing > y) {
-                    return null;
-                }
-
-                lineH += this._lineSpacing;
-            }
-            if(line === 0) {
-                return null;
-            }
-            var lineElement:egret.ILineElement = lineArr[line - 1];
-            var lineW:number = 0;
-            for (i = 0; i < lineElement.elements.length; i++) {
-                var iwTE:IWTextElement = lineElement.elements[i];
-
-                if (lineW + iwTE.width < x) {
-                    lineW += iwTE.width;
-                }
-                else {
-                    return {"lineIndex" : line - 1, "textElementIndex" : i};
-                }
-            }
-
-            return null;
-        }
-
-        /**
-         * 根据点击的坐标获取当前光标的位置
-         * @param x
-         * @param y
-         * @return 光标的位置
-         * @private
-         */
-        public _getHitIndex(x:number, y:number):number {
-            var self = this;
-            if (self._textMaxHeight == 0) {//文本可点击区域
-                return 0;
-            }
-            var lineArr:Array<egret.ILineElement>  = self._getLinesArr();
-
-            var idx:number = 0;
-            var line:number = -1;
-            var lineH:number = 0;
-            var startLine:number = Math.max(self._scrollV - 1, 0);
-            var startY:number = this.getStartY(this.getValign());
-            var scrollNum:number = this._getScrollNum();
-            var i:number = 0;
-            for (; i < lineArr.length && i < scrollNum + startLine; i++) {
-                var lineEle:egret.ILineElement = lineArr[i];
-
-                if (i < startLine) {
-                }
-                else {
-                    if (lineH + lineEle.height + startY >= y) {
-                        line = i;
-                        break;
-                    }
-                    else {
-                        lineH += lineEle.height;
-                    }
-
-                    if (lineH + this._lineSpacing + startY >= y) {
-                        line = i;
-                        break;
-                    }
-                }
-
-                if (i == scrollNum + startLine - 1) {
-                    line = i;
-                }
-                else {
-                    idx += lineEle.charNum;
-                }
-            }
-
-            if(i == lineArr.length) {//最下面
-                return this._text.length;
-            }
-
-            var lineEle:egret.ILineElement = lineArr[line];
-            var startWidth:number = this.getStartXAtLine(line, this.getHalign());
-
-            var rendererContext = egret.MainContext.instance.rendererContext;
-            rendererContext.setupFont(this);
-            if (lineEle.elements.length) {
-                var iwTE:IWTextElement = lineEle.elements[0];
-                var startX:number = this.getStartXAtLine(line, this.getHalign());
-                if (x < startX) {//在前面
-
-                }
-                else if (startX + iwTE.width < x) {//在最外面
-                    idx += iwTE.text.length;
-                }
-                else {//在
-                    var lineW:number = 0;
-                    for (var j = 0; j < iwTE.text.length; j++) {
-                        var w:number = rendererContext.measureText(iwTE.text.charAt(j));
-                        if (lineW + w / 2 + startWidth > x) {//在半个字前面
-                            break;
-                        }
-                        else {
-                            idx++;
-                            lineW += w;
-                        }
-                    }
-                }
-            }
-
-            return idx;
-        }
-
-        /**
-         * 某一行绘制的起始x坐标
-         * @param line
-         * @param halign
-         * @returns {number}
-         */
-        private getStartXAtLine(line:number, halign:number):number {
-            var self = this;
-            var maxWidth:number = self._hasWidthSet ? self._explicitWidth : self._textMaxWidth;
-
-            return halign * (maxWidth - self._linesArr[line].width);
-        }
-
-        private getHalign():number {
-            var self = this;
-            var halign:number = 0;
-            if (self._textAlign == HorizontalAlign.CENTER) {
-                halign = 0.5;
-            }
-            else if (self._textAlign == HorizontalAlign.RIGHT) {
-                halign = 1;
-            }
-
-            if (!self._multiline && self._linesArr.length > 1) {
-                halign = 0;
-            }
-
-            return halign;
-        }
-
-        /**
-         * 获取某一行绘制的起始y坐标
-         * @param line
-         * @param valign
-         * @returns {number}
-         */
-        private getStartYAtLine(line:number, valign:number):number {
-            var self = this;
-            var startY:number = self.getStartY(valign);
-            var lineArr:Array<egret.ILineElement> = self._linesArr;
-            var startLine:number = Math.max(self._scrollV - 1, 0);
-            for (var i:number = startLine; i < lineArr.length; i++) {
-                if (i == line) {
-                    break;
-                }
-                startY += lineArr[i].height + self._lineSpacing;
-            }
-
-            return startY;
-        }
-
-        /**
-         * 整体绘制的起始y坐标
-         * @param valign
-         * @returns {number}
-         */
-        private getStartY(valign:number):number {
-            var self = this;
-            var textHeight:number = self._multiline ? self._textMaxHeight + (self._numLines - 1) * self._lineSpacing : self._size;
-            if (self._hasHeightSet && textHeight < self._explicitHeight) {
-                return valign * (self._explicitHeight - textHeight);
-            }
-            else {
-                return 0;
-            }
-        }
-        private getValign():number{
-            var self = this;
-            var textHeight:number = self._multiline ? self._textMaxHeight + (self._numLines - 1) * self._lineSpacing : self._size;
-
-            if (self._hasHeightSet) {//
-                if (textHeight < self._explicitHeight) {//最大高度比需要显示的高度小
-                    var valign:number = 0;
-                    if (self._verticalAlign == VerticalAlign.MIDDLE)
-                        valign = 0.5;
-                    else if (self._verticalAlign == VerticalAlign.BOTTOM)
-                        valign = 1;
-
-                    return valign;
-                }
-            }
-            return 0;
-        }
-
-        public _getScrollNum():number {
-            var self = this;
-            var scrollNum:number = 1;
-            if (self._multiline) {
-                var height = this.height;
-                var size = this.size;
-                var lineSpacing = this.lineSpacing;
-                scrollNum = Math.floor(height / (size + lineSpacing));
-                var leftH = height - (size + lineSpacing) * scrollNum;
-                if (leftH > size / 2) {
-                    scrollNum++;
-                }
-            }
-            return scrollNum;
-        }
-
-        public _getSelectionScrollV(oppositeSelectionEnd:number, isBack:boolean):number {
-            var self = this;
-            var selection:number = this._text.length - oppositeSelectionEnd;
-            var lineArr:Array<egret.ILineElement> = self._linesArr;
-            var chars:number = 0;
-            var selectionScrollV:number = 0;
-            for (var i:number = 0; i < lineArr.length; i++) {
-                chars += lineArr[i].charNum;
-                if (chars >= selection) {
-                    if (chars == selection && lineArr[i].hasNextLine) {
-                        selectionScrollV = i + 2;
-                    }
-                    else {
-                        selectionScrollV = i + 1;
-                    }
-                    break;
-                }
-            }
-
-            var scrollNum:number = this._getScrollNum();
-
-            if (isBack) {
-                if (selectionScrollV - 1 + scrollNum  >= lineArr.length) {
-                    return Math.max(lineArr.length - scrollNum + 1, 1);
-                }
-            }
-
-            console.log("scrollNum=" + scrollNum + " selectionScrollV=" + selectionScrollV + " scrollV=" + this._scrollV);
-
-            if (this._scrollV <= selectionScrollV && this._scrollV + scrollNum - 1 >= selectionScrollV) {
-                return this._scrollV;
-            }
-
-            if (isBack) {
-                return selectionScrollV;
-            }
-
-            return Math.max(selectionScrollV - scrollNum + 1, 1);
         }
     }
 }

@@ -87,6 +87,13 @@ module egret {
             this._isNeedShow = true;
         }
 
+        public _setOppositeSelectionEnd(oppositeSelectionEnd:number):void {
+            this._oppositeSelectionEnd = oppositeSelectionEnd;
+            this.inputElement.selectionStart = this.inputElement.value.length - this._oppositeSelectionEnd;
+            this.inputElement.selectionEnd = this.inputElement.value.length - this._oppositeSelectionEnd;
+            this.inputElement.focus();
+        }
+
         private onBlurHandler():void {
             HTMLInput.getInstance().clearInputElement();
             window.scrollTo(0, 0);
@@ -102,9 +109,9 @@ module egret {
                 this.inputElement.onblur = this.onBlurHandler;
             }
 
-            this.inputElement.focus();
             this.inputElement.selectionStart = this.inputElement.value.length - this._oppositeSelectionEnd;
             this.inputElement.selectionEnd = this.inputElement.value.length - this._oppositeSelectionEnd;
+            this.inputElement.focus();
         }
 
         private _isNeesHide:boolean = false;
@@ -188,6 +195,8 @@ module egret {
             this.inputElement = null;
 
             this.dispatchEvent(new egret.Event("blur"));
+
+
         }
     }
 
@@ -291,6 +300,7 @@ module egret {
                 self._inputElement = inputElement;
                 container.addEventListener("click", function (e) {
                     if (self._stageText) {
+                        egret.MainContext.instance.stage._changeSizeDispatchFlag = false;
                         self._stageText.onClickHandler(e);
                     }
                 });
@@ -329,6 +339,7 @@ module egret {
                 this._stageText.onDisconnect();
                 this._stageText = null;
             }
+            egret.MainContext.instance.stage._changeSizeDispatchFlag = true;
         }
 
         public getInputElement(stageText):any {

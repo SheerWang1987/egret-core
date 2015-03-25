@@ -53,14 +53,10 @@ module egret {
 
             this.stageText.addEventListener("updateText", this.updateTextHandler, this);
             this._text.addEventListener(egret.TouchEvent.TOUCH_BEGIN, this.onMouseDownHandler, this);
-            egret.MainContext.instance.stage.addEventListener(egret.TouchEvent.TOUCH_TAP, this.onStageDownHandler, this);
-            //egret.MainContext.instance.stage.addEventListener(egret.TouchEvent.TOUCH_BEGIN, this.onTouchHandler, this);
+            this._text.addEventListener(egret.TouchEvent.TOUCH_END, this.onMouseUpHandler, this);
+            egret.MainContext.instance.stage.addEventListener(egret.TouchEvent.TOUCH_BEGIN, this.onStageDownHandler, this);
 
             this.stageText.addEventListener("blur", this.blurHandler, this);
-        }
-
-        private onTouchHandler(e):void {
-
         }
 
         public _removeStageText():void {
@@ -73,7 +69,8 @@ module egret {
 
             this.stageText.removeEventListener("updateText", this.updateTextHandler, this);
             this._text.removeEventListener(egret.TouchEvent.TOUCH_BEGIN, this.onMouseDownHandler, this);
-            egret.MainContext.instance.stage.removeEventListener(egret.TouchEvent.TOUCH_TAP, this.onStageDownHandler, this);
+            this._text.removeEventListener(egret.TouchEvent.TOUCH_END, this.onMouseUpHandler, this);
+            egret.MainContext.instance.stage.removeEventListener(egret.TouchEvent.TOUCH_BEGIN, this.onStageDownHandler, this);
 
             this.stageText.removeEventListener("blur", this.blurHandler, this);
         }
@@ -104,20 +101,7 @@ module egret {
                 return;
             }
 
-            this._showLine = this._text._getScrollNum();
-            //if (self._text._multiline) {
-            //    var height = this._text.height;
-            //    var size = this._text.size;
-            //    var lineSpacing = this._text.lineSpacing;
-            //    this._showLine = Math.floor(height / (size + lineSpacing));
-            //    var leftH = height - (size + lineSpacing) * this._showLine;
-            //    if (leftH > size / 2) {
-            //        this._showLine++;
-            //    }
-            //}
-            //else {
-            //    this._showLine = 1;
-            //}
+            this._showLine = TextFieldUtils._getScrollNum(this._text);
 
             this._text._isTyping = true;
 
@@ -127,10 +111,10 @@ module egret {
                 this._text._oppositeSelectionEnd = 0;
             }
             else {
-                var selectionEnd = this._text._getHitIndex(event.localX, event.localY);
+                var selectionEnd = TextFieldUtils._getHitIndex(this._text, event.localX, event.localY);
                 this._text._oppositeSelectionEnd = this._text._text.length - selectionEnd;
             }
-            this._text._scrollV = this._text._getSelectionScrollV(this._text._oppositeSelectionEnd, false);
+            this._text._scrollV = TextFieldUtils._getSelectionScrollV(this._text, this._text._oppositeSelectionEnd, false);
 
 
                 //强制更新输入框位置
@@ -138,6 +122,12 @@ module egret {
 
             var point = this._text.localToGlobal();
             this.stageText._initElement(point.x, point.y, self._text._worldTransform.a, self._text._worldTransform.d);
+        }
+
+        private onMouseUpHandler(event:TouchEvent):void {
+            event.stopPropagation();
+
+            this.stageText._setOppositeSelectionEnd(this._text._oppositeSelectionEnd);
         }
 
         //未点中文本
@@ -149,7 +139,7 @@ module egret {
             this.resetText();
 
             this._text._getLinesArr();
-            this._text._scrollV = this._text._getSelectionScrollV(this._text._oppositeSelectionEnd, event.data ? event.data.isBack : false);
+            this._text._scrollV = TextFieldUtils._getSelectionScrollV(this._text, this._text._oppositeSelectionEnd, event.data ? event.data.isBack : false);
 
             //抛出change事件
             this._text.dispatchEvent(new egret.Event(egret.Event.CHANGE));

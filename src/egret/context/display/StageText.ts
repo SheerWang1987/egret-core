@@ -81,6 +81,10 @@ module egret {
 
         }
 
+        public _setOppositeSelectionEnd(oppositeSelectionEnd:number):void {
+
+        }
+
         public _add():void {
 
         }

@@ -202,7 +202,12 @@ module egret {
         }
         public static _getValign(textfield:egret.TextField):number{
             var textHeight:number = textfield._multiline ? textfield._textMaxHeight + (textfield._numLines - 1) * textfield._lineSpacing : textfield._size;
-
+            if (textfield._type == egret.TextFieldType.INPUT) {
+                if (textfield._multiline) {
+                    return 0;
+                }
+                return 0.5;
+            }
             if (textfield._hasHeightSet) {//
                 if (textHeight < textfield._explicitHeight) {//最大高度比需要显示的高度小
                     var valign:number = 0;

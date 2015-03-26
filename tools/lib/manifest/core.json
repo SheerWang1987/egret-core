@@ -59,7 +59,7 @@
         "egret/text/HtmlTextParser.ts",
         "egret/text/TextFieldType.ts",
         "egret/display/SpriteSheet.ts",
-        "egret/text/InputController2.ts",
+        "egret/text/InputController3.ts",
         "egret/text/BitmapFont.ts",
         "egret/display/MovieClip.ts",
         "egret/display/FrameLabel.ts",

@@ -35,8 +35,11 @@ module egret {
      */
     export class StageText extends EventDispatcher {
 
-        constructor() {
+        public _textfield:egret.TextField;
+        constructor(textfield?:egret.TextField) {
             super();
+
+            this._textfield = textfield;
         }
 
         /**
@@ -146,16 +149,24 @@ module egret {
             this._textAlign = value;
         }
 
+        public _verticalAlign:string = "top";
+        public _setVerticalAlign(value:string):void {
+            this._verticalAlign = value;
+        }
+
         public _visible:boolean = false;
         public _setVisible(value:boolean):void {
             this._visible = value;
         }
 
+        public _width:number = 0;
         public _setWidth(value:number):void {
-
+            this._width = value;
         }
 
+        public _height:number = 0;
         public _setHeight(value:number):void {
+            this._height = value;
         }
 
         public _multiline:boolean = false;

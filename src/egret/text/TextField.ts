@@ -627,9 +627,6 @@ module egret {
             super._updateTransform();
 
             var matrix = this._worldTransform;
-            if (this._linesArr.length >= 2) {
-                console.log("_updateTransform matrix.a=" + matrix.a + "matrix.b=" + matrix.b + "matrix.c=" + matrix.c+ " matrix.d=" +  matrix.d + "matrix.tx=" + matrix.tx + "matrix.ty=" + matrix.ty)
-            }
         }
 
         public _updateTransform():void {
@@ -918,6 +915,14 @@ module egret {
             var self = this;
             var lines:Array<egret.ILineElement> = self._getLinesArr();
 
+
+            if (self._type == egret.TextFieldType.INPUT) {
+                if (self._isTyping) {
+                    return;
+                }
+            }
+
+
             if (self._textMaxWidth == 0) {
                 self.drawCursor(renderContext);
                 return;
@@ -953,10 +958,6 @@ module egret {
                 for (var j:number = 0, elementsLength:number = line.elements.length; j < elementsLength; j++) {
                     var element:egret.IWTextElement = line.elements[j];
                     var size:number = element.style.size || self._size;
-
-                    if (numLinesLength >= 2) {
-                        console.log("_updateTransform "+ "element.text=" + element.text + " drawX=" + drawX + "drawY="  + (drawY + (h - size) / 2));
-                    }
 
                     renderContext.drawText(self, element.text, drawX, drawY + (h - size) / 2, element.width, element.style);
                     drawX += element.width;

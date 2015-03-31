@@ -41,7 +41,13 @@ module egret {
         constructor() {
             super();
 
-            this.rootDiv = document.getElementById(egret.StageDelegate.canvas_div_name);
+            this.rootDiv = document.getElementById(StageDelegate.canvas_div_name);
+            if (!this.rootDiv) {
+                var container:any = document.getElementById(StageDelegate.egret_root_div);
+                this.rootDiv = egret.Browser.getInstance().$new("div");
+                this.rootDiv.id = StageDelegate.canvas_div_name;
+                container.appendChild(this.rootDiv);
+            }
         }
 
         private prevent(event):void {

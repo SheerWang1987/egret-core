@@ -55,7 +55,7 @@
         "egret/text/TextFieldUtils.ts",
         "egret/text/TextFieldProperties.ts",
         "egret/text/ITextElement.ts",
-        "egret/text/TextField.ts",
+        "egret/text/TextField3.ts",
         "egret/text/HtmlTextParser.ts",
         "egret/text/TextFieldType.ts",
         "egret/display/SpriteSheet.ts",

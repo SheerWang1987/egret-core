@@ -35,10 +35,13 @@ module egret {
      */
     export class StageText extends EventDispatcher {
 
-        public _textfield:egret.TextField;
-        constructor(textfield?:egret.TextField) {
+        constructor() {
             super();
 
+        }
+
+        public _textfield:egret.TextField;
+        public _setTextField(textfield:egret.TextField):void {
             this._textfield = textfield;
         }
 
@@ -184,6 +187,10 @@ module egret {
         }
 
         public _initElement(x:number, y:number, cX:number, cY:number):void {
+
+        }
+
+        public _removeInput():void {
 
         }
 

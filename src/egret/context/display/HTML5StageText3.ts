@@ -24,8 +24,6 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-
 module egret {
 
     /**
@@ -38,12 +36,6 @@ module egret {
         constructor() {
             super();
             HTMLInput.getInstance();
-        }
-
-        public _addListeners():void {
-        }
-
-        public _removeListeners():void {
         }
 
         private _isNeedShow:boolean = false;
@@ -63,27 +55,19 @@ module egret {
             this.inputDiv.transforms();
         }
 
-        private _oppositeSelectionEnd:number = 0;
         public _show(multiline:boolean, size:number, width:number, height:number, oppositeSelectionEnd:number):void {
             this._multiline = multiline;
-            this._oppositeSelectionEnd = oppositeSelectionEnd;
             if (!HTMLInput.getInstance().isCurrentStageText(this)) {
                 this.inputElement = HTMLInput.getInstance().getInputElement(this);
-                this.inputDiv = this.inputElement.parentNode;
 
+                this.inputDiv = HTMLInput.getInstance()._inputDIV;
             }
             else {
                 this.inputElement.onblur = null;
             }
 
+            //标记当前文本被选中
             this._isNeedShow = true;
-        }
-
-        public _setOppositeSelectionEnd(oppositeSelectionEnd:number):void {
-            this._oppositeSelectionEnd = oppositeSelectionEnd;
-            this.inputElement.selectionStart = this.inputElement.value.length - this._oppositeSelectionEnd;
-            this.inputElement.selectionEnd = this.inputElement.value.length - this._oppositeSelectionEnd;
-            this.inputElement.focus();
         }
 
         private onBlurHandler():void {
@@ -92,59 +76,35 @@ module egret {
         }
 
         private executeShow():void {
-            //打开
-            var txt = this._getText();
-            this.inputElement.value = txt;
             var self = this;
+            //打开
+            this.inputElement.value = this._getText();
 
             if (this.inputElement.onblur == null) {
                 this.inputElement.onblur = this.onBlurHandler;
             }
 
-            //修改属性
-            this.setElementStyle("fontStyle", this._italic ? "italic" : "normal");
-            this.setElementStyle("fontWeight", this._bold ? "bold" : "normal");
-            this.setElementStyle("textAlign", this._textAlign);
-            this.setElementStyle("fontSize", this._size + "px");
-            this.setElementStyle("lineHeight", this._size + "px");
-            this.setElementStyle("color", this._color);
-            this.setElementStyle("width", this._width + "px");
-            this.setElementStyle("height", this._height + "px");
-            this.setElementStyle("verticalAlign", this._verticalAlign);
+            this._resetStageText();
 
-            if (this._maxChars > 0) {
-                this.inputElement.setAttribute("maxlength", this._maxChars);
+            if (this._textfield._maxChars > 0) {
+                this.inputElement.setAttribute("maxlength", this._textfield._maxChars);
             }
             else {
                 this.inputElement.removeAttribute("maxlength");
             }
 
-            this.inputElement.selectionStart = this.inputElement.value.length - this._oppositeSelectionEnd;
-            this.inputElement.selectionEnd = this.inputElement.value.length - this._oppositeSelectionEnd;
+            this.inputElement.selectionStart = this.inputElement.value.length;
+            this.inputElement.selectionEnd = this.inputElement.value.length;
             this.inputElement.focus();
-
         }
 
         private _isNeesHide:boolean = false;
-
         public _hide():void {
-            //this._isNeesHide = true;
-            //
-            //this.executeHide();
-        }
-
-        private executeHide():void {
-            if (this.inputElement == null) {//暂未
-                return;
-            }
-
-            HTMLInput.getInstance().disconnectStageText(this);
-            this.inputElement = null;
-            this.inputDiv = null;
+            //标记当前点击其他地方关闭
+            this._isNeesHide = true;
         }
 
         private textValue:string = "";
-
         public _getText():string {
             if (!this.textValue) {
                 this.textValue = "";
@@ -164,47 +124,26 @@ module egret {
             }
         }
 
-        public onInput(isBack:boolean):void {
+        public _onInput():void {
             var self = this;
-            if (!self._multiline && self.inputElement.value.match(/\r|\n/)) {
-                self.inputElement.value = self.inputElement.value.replace(/\r|\n/g, "");
-
-                self.inputElement.selectionStart = Math.min(self.inputElement.selectionStart, self.inputElement.value.length - self._oppositeSelectionEnd);
-                self.inputElement.selectionEnd = self.inputElement.value.length - self._oppositeSelectionEnd;
-            }
-
             self.textValue = self.inputElement.value;
 
-            egret.Event.dispatchEvent(self, "updateText", false, {"isBack":isBack});
-            //self.dispatchEvent(new egret.Event("updateText"));
+            egret.Event.dispatchEvent(self, "updateText", false);
         }
 
-        public onDirectionKeyHandler(e):void {
-            var self = this;
-            self.inputElement.selectionStart = Math.min(self.inputElement.selectionStart, self.inputElement.value.length - self._oppositeSelectionEnd);
-            self.inputElement.selectionEnd = self.inputElement.value.length - self._oppositeSelectionEnd;
-        }
-
-        public onClickHandler(e):void {
+        public _onClickHandler(e):void {
             if (this._isNeedShow) {
-                e.stopPropagation();
-                e.preventDefault();
+                e.stopImmediatePropagation();
+                //e.preventDefault();
                 this._isNeedShow = false;
 
                 this.executeShow();
 
                 this.dispatchEvent(new egret.Event("focus"));
             }
-            //else if (this._isNeesHide) {
-            //    e.stopPropagation();
-            //    e.preventDefault();
-            //    this._isNeesHide = false;
-            //
-            //    this.executeHide();
-            //}
         }
 
-        public onDisconnect():void {
+        public _onDisconnect():void {
             this.inputElement = null;
 
             this.dispatchEvent(new egret.Event("blur"));
@@ -219,6 +158,32 @@ module egret {
                 }
             }
         }
+
+        public _removeInput():void {
+            if (this.inputElement) {
+                HTMLInput.getInstance().disconnectStageText(this);
+            }
+        }
+
+        /**
+         * 修改位置
+         * @private
+         */
+        public _resetStageText():void {
+            if (this.inputElement) {
+                var textfield:egret.TextField = this._textfield;
+                this.setElementStyle("fontFamily", textfield._fontFamily);
+                this.setElementStyle("fontStyle", textfield._italic ? "italic" : "normal");
+                this.setElementStyle("fontWeight", textfield._bold ? "bold" : "normal");
+                this.setElementStyle("textAlign", textfield._textAlign);
+                this.setElementStyle("fontSize", textfield._size + "px");
+                this.setElementStyle("lineHeight", textfield._size + "px");
+                this.setElementStyle("color", textfield._textColorString);
+                this.setElementStyle("width", textfield._getSize(Rectangle.identity).width + "px");
+                this.setElementStyle("height", textfield._getSize(Rectangle.identity).height + "px");
+                this.setElementStyle("verticalAlign", textfield._verticalAlign);
+            }
+        }
     }
 
     export class HTMLInput {
@@ -228,7 +193,7 @@ module egret {
         private _multiElement:any;
 
         private _inputElement:any;
-        private _inputDIV:any;
+        public _inputDIV:any;
 
         public isInputOn():boolean {
             return this._stageText != null;
@@ -238,28 +203,33 @@ module egret {
             return this._stageText == stageText;
         }
 
+        private initValue(dom:any):void {
+            dom.style.position = "absolute";
+            dom.style.left = "0px";
+            dom.style.top = "0px";
+            dom.style.border = "none";
+            dom.style.padding = "0";
+        }
+
         private initStageDelegateDiv():any {
             var stageDelegateDiv = egret.Browser.getInstance().$("#StageDelegateDiv");
             if (!stageDelegateDiv) {
                 stageDelegateDiv = egret.Browser.getInstance().$new("div");
                 stageDelegateDiv.id = "StageDelegateDiv";
-                var container = document.getElementById(egret.StageDelegate.canvas_div_name);
+                var container = document.getElementById(egret.StageDelegate.egret_root_div);
                 container.appendChild(stageDelegateDiv);
                 stageDelegateDiv.transforms();
-                stageDelegateDiv.style.position = "absolute";
-                stageDelegateDiv.style.left = "0px";
-                stageDelegateDiv.style.top = "0px";
+
+                this.initValue(stageDelegateDiv);
+
                 stageDelegateDiv.style.width = "0px";
                 stageDelegateDiv.style.height = "0px";
-                stageDelegateDiv.style.border = "none";
-                stageDelegateDiv.style.padding = "0";
 
                 this._inputDIV = egret.Browser.getInstance().$new("div");
-                this._inputDIV.style.position = "absolute";
+                this.initValue(this._inputDIV);
                 this._inputDIV.style.width = "0px";
                 this._inputDIV.style.height = "0px";
-                this._inputDIV.style.border = "none";
-                this._inputDIV.style.padding = "0";
+
                 this._inputDIV.position.x = 0;
                 this._inputDIV.position.y = -100;
                 this._inputDIV.scale.x = 1;
@@ -269,10 +239,11 @@ module egret {
                 stageDelegateDiv.appendChild(this._inputDIV);
 
                 var self = this;
-                container.addEventListener("click", function (e) {
+                var canvasDiv = document.getElementById(egret.StageDelegate.canvas_div_name);
+                canvasDiv.addEventListener("click", function (e) {
                     if (self._stageText) {
                         egret.MainContext.instance.stage._changeSizeDispatchFlag = false;
-                        self._stageText.onClickHandler(e);
+                        self._stageText._onClickHandler(e);
 
                         HTMLInput.getInstance().show();
                     }
@@ -282,7 +253,6 @@ module egret {
                 this.initInputElement(false);
             }
         }
-
 
         private initInputElement(multiline:boolean):void {
             var self = this;
@@ -300,37 +270,58 @@ module egret {
                 this._simpleElement = inputElement;
                 inputElement.id = "egretInput";
             }
-            inputElement.style.position = "absolute";
-            this._inputDIV.appendChild(inputElement);
+
             inputElement.type = "text";
+
+            this._inputDIV.appendChild(inputElement);
             inputElement.setAttribute("tabindex", "-1");
             inputElement.style.width = "1px";
             inputElement.style.height = "12px";
-            inputElement.style.padding = "0";
-            inputElement.style.left = "0px";
-            inputElement.style.top = "0px";
+
+            this.initValue(inputElement);
             inputElement.style.outline = "thin";
             inputElement.style.background = "none";
-            inputElement.style.border = "none";
 
-            //完全隐藏输入框///////////////////////////
-            //隐藏光标  ios 0
-            inputElement.style.fontSize = 0 + "px";
+            inputElement.style.overflow = "hidden";
+            inputElement.style.wordBreak = "break-all";
+
             //隐藏输入框
             inputElement.style.opacity = 0;
-            //////////////////////////////////////
 
             inputElement.oninput = function () {
                 if (self._stageText) {
-                    self._stageText.onInput(false);
+                    self._stageText._onInput();
                 }
             };
+
+            /*var call = function(e){
+                e.stopImmediatePropagation();
+                e.stopPropagation();
+                e.preventDefault();
+            };
+            inputElement.addEventListener("click", call);
+
+            inputElement.addEventListener("MSPointerDown", call);
+            inputElement.addEventListener("MSPointerMove", call);
+            inputElement.addEventListener("MSPointerUp", call);
+
+            inputElement.addEventListener("mousedown", call);
+            inputElement.addEventListener("mousemove", call);
+            inputElement.addEventListener("mouseup", call);
+
+            inputElement.addEventListener("touchstart", call);
+            inputElement.addEventListener("touchmove", call);
+            inputElement.addEventListener("touchend", call);
+            inputElement.addEventListener("touchcancel", call);*/
         }
 
         public show():void {
             var inputElement = this._inputElement;
+            var self = this;
             //隐藏输入框
-            inputElement.style.opacity = 1;
+            egret.__callAsync(function () {
+                inputElement.style.opacity = 1;
+            }, this);
         }
 
         public initInput():void {
@@ -356,6 +347,20 @@ module egret {
                 this._inputElement.style.left = "0px";
                 this._inputElement.style.top = "0px";
                 this._inputElement.style.opacity = 0;
+                this._inputElement.style.fontSize = 0 + "px";
+
+                var otherElement;
+                if (this._simpleElement == this._inputElement) {
+                    otherElement = this._multiElement;
+                }
+                else {
+                    otherElement = this._simpleElement;
+                }
+
+                if (otherElement.parentNode == null) {
+                    //this._inputDIV.appendChild(otherElement);
+                }
+                otherElement.style.display = "block";
 
                 this._inputDIV.position.x = 0;
                 this._inputDIV.position.y = -100;
@@ -363,7 +368,7 @@ module egret {
             }
 
             if (this._stageText) {
-                this._stageText.onDisconnect();
+                this._stageText._onDisconnect();
                 this._stageText = null;
             }
             egret.MainContext.instance.stage._changeSizeDispatchFlag = true;
@@ -380,6 +385,20 @@ module egret {
             else {
                 this._inputElement = this._simpleElement;
             }
+
+
+            var otherElement;
+            if (this._simpleElement == this._inputElement) {
+                otherElement = this._multiElement;
+            }
+            else {
+                otherElement = this._simpleElement;
+            }
+
+            if (otherElement.parentNode) {
+                //otherElement.parentNode.removeChild(otherElement);
+            }
+            otherElement.style.display = "none";
 
             return this._inputElement;
         }
@@ -425,8 +444,6 @@ module egret {
 
             return HTMLInput._instance;
         }
-
-
     }
 }
 

@@ -249,8 +249,8 @@ module egret {
             egret.StageDelegate.getInstance()._stageHeight = Math.round(h);
 
             var canvasDiv:any = document.getElementById(StageDelegate.canvas_div_name);
+            var container:any = document.getElementById(StageDelegate.egret_root_div);
             if (!canvasDiv) {
-                var container:any = document.getElementById(StageDelegate.egret_root_div);
                 canvasDiv = egret.Browser.getInstance().$new("div");
                 canvasDiv.id = StageDelegate.canvas_div_name;
                 container.appendChild(canvasDiv);
@@ -259,6 +259,10 @@ module egret {
             canvasDiv.style.width = styleW + "px";
             canvasDiv.style.height = styleH + "px";
             canvasDiv.style.top = top + "px";
+
+            container.style.width = styleW + "px";
+            container.style.height = styleH + "px";
+            container.style.top = top + "px";
         }
 
         /**

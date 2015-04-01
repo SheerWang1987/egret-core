@@ -66,6 +66,8 @@ module egret {
                 this.inputElement.onblur = null;
             }
 
+            HTMLInput.getInstance()._needShow = true;
+
             //标记当前文本被选中
             this._isNeedShow = true;
         }
@@ -211,7 +213,10 @@ module egret {
             dom.style.padding = "0";
         }
 
+        public _needShow:boolean = false;
+
         private initStageDelegateDiv():any {
+            var self = this;
             var stageDelegateDiv = egret.Browser.getInstance().$("#StageDelegateDiv");
             if (!stageDelegateDiv) {
                 stageDelegateDiv = egret.Browser.getInstance().$new("div");
@@ -220,40 +225,50 @@ module egret {
                 container.appendChild(stageDelegateDiv);
                 stageDelegateDiv.transforms();
 
-                this.initValue(stageDelegateDiv);
+                self.initValue(stageDelegateDiv);
 
                 stageDelegateDiv.style.width = "0px";
                 stageDelegateDiv.style.height = "0px";
 
-                this._inputDIV = egret.Browser.getInstance().$new("div");
-                this.initValue(this._inputDIV);
-                this._inputDIV.style.width = "0px";
-                this._inputDIV.style.height = "0px";
+                self._inputDIV = egret.Browser.getInstance().$new("div");
+                self.initValue(self._inputDIV);
+                self._inputDIV.style.width = "0px";
+                self._inputDIV.style.height = "0px";
 
-                this._inputDIV.position.x = 0;
-                this._inputDIV.position.y = -100;
-                this._inputDIV.scale.x = 1;
-                this._inputDIV.scale.y = 1;
-                this._inputDIV.transforms();
-                this._inputDIV.style[this.getTrans("transformOrigin")] = "0% 0% 0px";
-                stageDelegateDiv.appendChild(this._inputDIV);
+                self._inputDIV.position.x = 0;
+                self._inputDIV.position.y = -100;
+                self._inputDIV.scale.x = 1;
+                self._inputDIV.scale.y = 1;
+                self._inputDIV.transforms();
+                self._inputDIV.style[Browser.getInstance().getTrans("transformOrigin")] = "0% 0% 0px";
+                stageDelegateDiv.appendChild(self._inputDIV);
 
-                var self = this;
                 var canvasDiv = document.getElementById(egret.StageDelegate.canvas_div_name);
                 canvasDiv.addEventListener("click", function (e) {
-                    if (self._stageText) {
+                    if (self._needShow) {
+                        self._needShow = false;
+
                         egret.MainContext.instance.stage._changeSizeDispatchFlag = false;
                         self._stageText._onClickHandler(e);
 
                         HTMLInput.getInstance().show();
+
+                    }
+                    else {
+                        if (self._inputElement) {
+                            self.clearInputElement();
+                            self._inputElement.blur();
+                            self._inputElement = null;
+                        }
                     }
                 });
 
-                this.initInputElement(true);
-                this.initInputElement(false);
+                self.initInputElement(true);
+                self.initInputElement(false);
             }
         }
 
+        //初始化输入框
         private initInputElement(multiline:boolean):void {
             var self = this;
 
@@ -262,23 +277,23 @@ module egret {
             if (multiline) {
                 inputElement = document.createElement("textarea");
                 inputElement.style["resize"] = "none";
-                this._multiElement = inputElement;
+                self._multiElement = inputElement;
                 inputElement.id = "egretTextarea";
             }
             else {
                 inputElement = document.createElement("input");
-                this._simpleElement = inputElement;
+                self._simpleElement = inputElement;
                 inputElement.id = "egretInput";
             }
 
             inputElement.type = "text";
 
-            this._inputDIV.appendChild(inputElement);
+            self._inputDIV.appendChild(inputElement);
             inputElement.setAttribute("tabindex", "-1");
             inputElement.style.width = "1px";
             inputElement.style.height = "12px";
 
-            this.initValue(inputElement);
+            self.initValue(inputElement);
             inputElement.style.outline = "thin";
             inputElement.style.background = "none";
 
@@ -293,39 +308,15 @@ module egret {
                     self._stageText._onInput();
                 }
             };
-
-            /*var call = function(e){
-                e.stopImmediatePropagation();
-                e.stopPropagation();
-                e.preventDefault();
-            };
-            inputElement.addEventListener("click", call);
-
-            inputElement.addEventListener("MSPointerDown", call);
-            inputElement.addEventListener("MSPointerMove", call);
-            inputElement.addEventListener("MSPointerUp", call);
-
-            inputElement.addEventListener("mousedown", call);
-            inputElement.addEventListener("mousemove", call);
-            inputElement.addEventListener("mouseup", call);
-
-            inputElement.addEventListener("touchstart", call);
-            inputElement.addEventListener("touchmove", call);
-            inputElement.addEventListener("touchend", call);
-            inputElement.addEventListener("touchcancel", call);*/
         }
 
         public show():void {
-            var inputElement = this._inputElement;
             var self = this;
+            var inputElement = self._inputElement;
             //隐藏输入框
             egret.__callAsync(function () {
                 inputElement.style.opacity = 1;
-            }, this);
-        }
-
-        public initInput():void {
-            HTMLInput.getInstance().clearInputElement();
+            }, self);
         }
 
         public disconnectStageText(stageText):void {
@@ -337,101 +328,63 @@ module egret {
         }
 
         public clearInputElement():void {
-            if (this._inputElement) {
-                this._inputElement.value = "";
+            var self = this;
+            if (self._inputElement) {
+                self._inputElement.value = "";
 
-                this._inputElement.onblur = null;
+                self._inputElement.onblur = null;
 
-                this._inputElement.style.width = "1px";
-                this._inputElement.style.height = "12px";
-                this._inputElement.style.left = "0px";
-                this._inputElement.style.top = "0px";
-                this._inputElement.style.opacity = 0;
-                this._inputElement.style.fontSize = 0 + "px";
+                self._inputElement.style.width = "1px";
+                self._inputElement.style.height = "12px";
+                self._inputElement.style.left = "0px";
+                self._inputElement.style.top = "0px";
+                self._inputElement.style.opacity = 0;
 
                 var otherElement;
-                if (this._simpleElement == this._inputElement) {
-                    otherElement = this._multiElement;
+                if (self._simpleElement == self._inputElement) {
+                    otherElement = self._multiElement;
                 }
                 else {
-                    otherElement = this._simpleElement;
-                }
-
-                if (otherElement.parentNode == null) {
-                    //this._inputDIV.appendChild(otherElement);
+                    otherElement = self._simpleElement;
                 }
                 otherElement.style.display = "block";
 
-                this._inputDIV.position.x = 0;
-                this._inputDIV.position.y = -100;
-                this._inputDIV.transforms();
+                self._inputDIV.position.x = 0;
+                self._inputDIV.position.y = -100;
+                self._inputDIV.transforms();
             }
 
-            if (this._stageText) {
-                this._stageText._onDisconnect();
-                this._stageText = null;
+            if (self._stageText) {
+                self._stageText._onDisconnect();
+                self._stageText = null;
             }
             egret.MainContext.instance.stage._changeSizeDispatchFlag = true;
         }
 
         public getInputElement(stageText):any {
-            this.clearInputElement();
+            var self = this;
+            self.clearInputElement();
 
-            this._stageText = stageText;
+            self._stageText = stageText;
 
-            if (this._stageText._multiline) {
-                this._inputElement = this._multiElement;
+            if (self._stageText._multiline) {
+                self._inputElement = self._multiElement;
             }
             else {
-                this._inputElement = this._simpleElement;
+                self._inputElement = self._simpleElement;
             }
 
 
             var otherElement;
-            if (this._simpleElement == this._inputElement) {
-                otherElement = this._multiElement;
+            if (self._simpleElement == self._inputElement) {
+                otherElement = self._multiElement;
             }
             else {
-                otherElement = this._simpleElement;
-            }
-
-            if (otherElement.parentNode) {
-                //otherElement.parentNode.removeChild(otherElement);
+                otherElement = self._simpleElement;
             }
             otherElement.style.display = "none";
 
-            return this._inputElement;
-        }
-
-        private header:string = "";
-
-        /**
-         * 获取当前浏览器类型
-         * @type {string}
-         */
-        private getTrans(type:string):string {
-            if (this.header == "") {
-                this.header = this.getHeader();
-            }
-
-            return this.header + type.substring(1, type.length);
-        }
-
-        /**
-         * 获取当前浏览器的类型
-         * @returns {string}
-         */
-        private getHeader():string {
-            var tempStyle = document.createElement('div').style;
-            var transArr:Array<string> = ["t", "webkitT", "msT", "MozT", "OT"];
-            for (var i:number = 0; i < transArr.length; i++) {
-                var transform:string = transArr[i] + 'ransform';
-
-                if (transform in tempStyle)
-                    return transArr[i];
-            }
-
-            return transArr[0];
+            return self._inputElement;
         }
 
         private static _instance:HTMLInput;

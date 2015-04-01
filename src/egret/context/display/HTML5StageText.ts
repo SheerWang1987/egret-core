@@ -148,6 +148,27 @@ module egret {
                 this.inputElement.addEventListener("touchstart", this.callHandler);
                 this.inputElement.addEventListener("MSPointerDown", this.callHandler);
             }
+
+
+            /*var call = function(e){
+             e.stopImmediatePropagation();
+             e.stopPropagation();
+             e.preventDefault();
+             };
+             inputElement.addEventListener("click", call);
+
+             inputElement.addEventListener("MSPointerDown", call);
+             inputElement.addEventListener("MSPointerMove", call);
+             inputElement.addEventListener("MSPointerUp", call);
+
+             inputElement.addEventListener("mousedown", call);
+             inputElement.addEventListener("mousemove", call);
+             inputElement.addEventListener("mouseup", call);
+
+             inputElement.addEventListener("touchstart", call);
+             inputElement.addEventListener("touchmove", call);
+             inputElement.addEventListener("touchend", call);
+             inputElement.addEventListener("touchcancel", call);*/
         }
 
         public _removeListeners():void {

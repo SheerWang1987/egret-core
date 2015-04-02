@@ -651,6 +651,7 @@ module egret {
                 return;
             }
 
+
             super._draw(renderContext);
         }
 
@@ -921,7 +922,9 @@ module egret {
                 }
             }
 
+
             if (self._textMaxWidth == 0) {
+                self.drawCursor(renderContext);
                 return;
             }
 
@@ -961,9 +964,51 @@ module egret {
                 }
                 drawY += h / 2 + self._lineSpacing;
             }
+            self.drawCursor(renderContext);
         }
 
         public _oppositeSelectionEnd:number = 0;
+        private drawCursor(renderContext:RendererContext):void {
+            var self = this;
+            if (self._type == egret.TextFieldType.INPUT) {
+                if (self._isTyping) {
+                    var lines:Array<egret.ILineElement> = self._getLinesArr();
+
+                    var now = Date.now();
+                    if (now - self._inputDelay < 500) {
+                        var selectEnd:number = self._text.length - self._oppositeSelectionEnd;
+
+                        var scrollX:number = 0;
+                        var line:number = 0;
+                        for (var i:number = 0, length:number = lines.length; i < length; i++) {
+                            var tempLine:ILineElement = lines[i];
+                            var charNum:number = tempLine.charNum;
+                            var hasNextLine:boolean = tempLine.hasNextLine;
+                            if ((hasNextLine && selectEnd < charNum)//有换行
+                                || (!hasNextLine && selectEnd <= charNum) //无换行
+                            ){
+                                var element:egret.IWTextElement = tempLine.elements[0];
+                                if (element) {
+                                    var text:string = element.text.substr(0, selectEnd);
+                                    scrollX = renderContext.measureText(text);
+                                }
+                                line = i;
+                                break;
+                            }
+                            selectEnd -= charNum;
+                        }
+
+                        var inputDrawX:number = TextFieldUtils._getStartXAtLine(this, line, TextFieldUtils._getHalign(this));
+                        var inputDrawY:number = TextFieldUtils._getStartYAtLine(this, line, TextFieldUtils._getValign(this));
+                        renderContext.drawCursor(inputDrawX + scrollX, (inputDrawY),
+                            inputDrawX + scrollX, (inputDrawY + self._size));
+                    }
+                    else if (now - self._inputDelay > 1000) {
+                        self._inputDelay = now;
+                    }
+                }
+            }
+        }
 
         //增加点击事件
         private _addEvent():void {

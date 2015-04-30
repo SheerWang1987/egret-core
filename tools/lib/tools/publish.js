@@ -131,18 +131,11 @@ function publishNative(opts, versionFile) {
     if (true) {//拷贝其他需要打到zip包里的文件
         task.push(function (tempCallback) {
             //拷贝需要zip的文件
+            file.copy(path.join(releasePath, "nativeBase", "base.manifest"), path.join(ziptempPath, "version_" + versionFile + ".manifest"));
+
             file.copy(path.join(projectPath, "launcher", "native_loader.js"), path.join(ziptempPath, "launcher", "native_loader.js"));
             file.copy(path.join(projectPath, "launcher", "runtime_loader.js"), path.join(ziptempPath, "launcher", "runtime_loader.js"));
             file.copy(path.join(projectPath, "launcher", "native_require.js"), path.join(ziptempPath, "launcher", "native_require.js"));
-            if (noVerion) {
-                file.save(path.join(ziptempPath, "version.manifest"), "{}");
-                file.save(path.join(ziptempPath, "code.manifest"), JSON.stringify({code:1}));
-            }
-            else {
-                file.copy(path.join(releasePath, "nativeBase", "version.manifest"), path.join(ziptempPath, "version.manifest"));
-                file.copy(path.join(releasePath, "nativeBase", "code.manifest"), path.join(ziptempPath, "code.manifest"));
-            }
-
 
             if (file.exists(path.join(ziptempPath, "launcher", "native_require.js"))) {
                 var native_require = file.read(path.join(ziptempPath, "launcher", "native_require.js"));
@@ -184,34 +177,10 @@ function publishNative(opts, versionFile) {
     //拷贝其他资源文件
     if (true) {//拷贝其他文件到发布目录
         task.push(function (tempCallback) {
-            copyFilesWithIgnore(path.join(projectPath, "resource"), path.join(releaseOutputPath, "resource"));
+            var versionInfo = JSON.parse(file.read(path.join(releasePath, "nativeBase", "base.manifest")));
 
-            if (nozip) {
-                file.save(path.join(releaseOutputPath, "appVersion.manifest"), JSON.stringify({"version":Date.now(), "debug":1}));
-            }
-            else {
-                file.save(path.join(releaseOutputPath, "appVersion.manifest"), JSON.stringify({"version":Date.now()}));
-            }
+            copyFilesWithIgnore(projectPath, releaseOutputPath, versionInfo);
 
-            if (noVerion) {
-                file.save(path.join(releaseOutputPath, "base.manifest"), "{}");
-            }
-            else {
-                file.copy(path.join(releasePath, "nativeBase", "base.manifest"), path.join(releaseOutputPath, "base.manifest"));
-
-                var baseJson = JSON.parse(file.read(path.join(releasePath, "nativeBase", "base.manifest")));
-                var versionJson = JSON.parse(file.read(path.join(releasePath, "nativeBase", "version.manifest")));
-
-                for (var key in versionJson) {
-                    if (versionJson[key]["d"] == 1) {
-                        delete baseJson[key];
-                    }
-                    else if (baseJson[key] == null || versionJson[key]["v"] != baseJson[key]["v"]) {
-                        baseJson[key] = versionJson[key];
-                    }
-                }
-                file.save(path.join(releaseOutputPath, "localVersion.manifest"), JSON.stringify(baseJson));
-            }
 
             compressJson(releaseOutputPath);
             tempCallback();
@@ -274,33 +243,13 @@ function publishNative(opts, versionFile) {
         }
     });
 
+    function copyFilesWithIgnore(sourceRootPath, desRootPath, versionInfo) {
+        var copyFilePathList = file.getDirectoryAllListing(path.join(sourceRootPath, "resource"));
 
-    function copyFilesWithIgnore(sourceRootPath, desRootPath) {
-        var copyFilePathList = file.getDirectoryAllListing(path.join(sourceRootPath));
-
-        var ignorePathList = projectProperties.getIgnorePath();
-        ignorePathList = ignorePathList.map(function(item) {
-
-            var reg = new RegExp(item);
-            return reg;
-        });
-
-        var isIgnore = false;
         copyFilePathList.forEach(function(copyFilePath) {
-            isIgnore = false;
-
-            for (var key in ignorePathList) {//检测忽略列表
-                var ignorePath = ignorePathList[key];
-
-                if (copyFilePath.match(ignorePath)) {
-                    isIgnore = true;
-                    break;
-                }
-            }
-
-            if(!isIgnore) {//不在忽略列表的路径，拷贝过去
-                var copyFileRePath = path.relative(sourceRootPath, copyFilePath);
-                file.copy(path.join(copyFilePath), path.join(desRootPath, copyFileRePath));
+            var filePath = path.relative(sourceRootPath, copyFilePath);
+            if(versionInfo[filePath]) {//不在忽略列表的路径，拷贝过去
+                file.copy(path.join(copyFilePath), path.join(desRootPath, "resource", versionInfo[filePath]["v"]));
             }
         });
     }

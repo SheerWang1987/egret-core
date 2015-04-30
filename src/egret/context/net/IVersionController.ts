@@ -30,6 +30,8 @@ module egret {
      * @private
      */
     export interface IVersionController {
+        fetchVersion():void;
+
         checkIsNewVersion(url:string):boolean;
         saveVersion(url:string):void;
 
@@ -38,5 +40,7 @@ module egret {
          * @returns {Array<any>}
          */
         getChangeList():Array<any>;
+
+        getVirtualUrl(url:string):string;
     }
 }

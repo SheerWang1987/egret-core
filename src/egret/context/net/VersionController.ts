@@ -342,6 +342,10 @@ module egret {
             return oldVersion[url]["v"] == newVersion[url]["v"];
         }
 
+        public getVirtualUrl(url:string):string {
+            return url;
+        }
+
         /**
          * 检查文件是否是最新版本
          */

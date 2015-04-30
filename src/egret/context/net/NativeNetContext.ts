@@ -66,6 +66,7 @@ module egret {
             var self = this;
             var request:URLRequest = loader._request;
             var url:string = NetContext._getUrl(request);
+            var virtualUrl:string = this.getVirtualUrl(url);
             if (url.indexOf("http://") == 0) {
                 this.urlData.type = request.method;
                 //写入POST数据
@@ -94,7 +95,7 @@ module egret {
                 };
                 egret_native.requireHttp(url, this.urlData, promise);
             }
-            else if (!egret_native.isFileExists(url)) {
+            else if (!egret_native.isFileExists(virtualUrl)) {
                 download();
             }
             else if (!this.checkIsNewVersion(url)) {
@@ -118,7 +119,7 @@ module egret {
                     loader.data = content;
                     Event.dispatchEvent(loader, Event.COMPLETE);
                 };
-                egret_native.readFileAsync(url, promise);
+                egret_native.readFileAsync(virtualUrl, promise);
             }
 
             function download() {
@@ -127,12 +128,12 @@ module egret {
                 promise.onErrorFunc = function () {
                     egret.IOErrorEvent.dispatchIOErrorEvent(loader);
                 };
-                egret_native.download(url, url, promise);
+                egret_native.download(virtualUrl, virtualUrl, promise);
             }
 
             function onLoadComplete() {
                 self.saveVersion(url);
-                var content = egret_native.readFileSync(url);
+                var content = egret_native.readFileSync(virtualUrl);
                 loader.data = content;
                 Event.dispatchEvent(loader, Event.COMPLETE);
             }
@@ -152,11 +153,12 @@ module egret {
             var self = this;
             var request = loader._request;
             var url = request.url;
+            var virtualUrl:string = this.getVirtualUrl(url);
 
             if (url.indexOf("http://") != -1) {
                 download();
             }
-            else if (!egret_native.isFileExists(url)) {
+            else if (!egret_native.isFileExists(virtualUrl)) {
                 download();
             }
             else if (!this.checkIsNewVersion(url)) {
@@ -172,7 +174,7 @@ module egret {
                 promise.onErrorFunc = function () {
                     egret.IOErrorEvent.dispatchIOErrorEvent(loader);
                 };
-                egret_native.download(url, url, promise);
+                egret_native.download(virtualUrl, virtualUrl, promise);
             }
 
             function onLoadComplete() {
@@ -188,10 +190,11 @@ module egret {
             var self = this;
             var request = loader._request;
             var url = request.url;
+            var virtualUrl:string = this.getVirtualUrl(url);
             if (url.indexOf("http://") != -1) {
                 download();
             }
-            else if (!egret_native.isFileExists(url)) {
+            else if (!egret_native.isFileExists(virtualUrl)) {
                 download();
             }
             else if (!this.checkIsNewVersion(url)) {
@@ -224,7 +227,7 @@ module egret {
                 promise.onErrorFunc = function () {
                     egret.IOErrorEvent.dispatchIOErrorEvent(loader);
                 };
-                egret_native.Texture.addTextureAsyn(url, promise);
+                egret_native.Texture.addTextureAsyn(virtualUrl, promise);
             }
 
             function download() {
@@ -233,7 +236,7 @@ module egret {
                 promise.onErrorFunc = function () {
                     egret.IOErrorEvent.dispatchIOErrorEvent(loader);
                 };
-                egret_native.download(url, url, promise);
+                egret_native.download(virtualUrl, virtualUrl, promise);
             }
 
             function onLoadComplete() {
@@ -242,10 +245,17 @@ module egret {
                     addTextureAsync();
                 }
                 else {
-                    var bitmapData = egret_native.Texture.addTexture(url);
+                    var bitmapData = egret_native.Texture.addTexture(virtualUrl);
                     addTexture(bitmapData);
                 }
             }
+        }
+
+        private getVirtualUrl(url:string):string {
+            if (this._versionCtr) {
+                return this._versionCtr.getVirtualUrl(url);
+            }
+            return url;
         }
 
         /**

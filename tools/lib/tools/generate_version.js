@@ -23,7 +23,7 @@ function createManifest(projectPath, outputPath, newCode, ignorePathList){
 
     var oldVersion;
     if(file.exists(basePath)) {
-        oldVersion = JSON.parse(file.read(basePath));
+        //oldVersion = JSON.parse(file.read(basePath));
     }
 
     var oldCode = 1;
@@ -88,7 +88,7 @@ function createManifest(projectPath, outputPath, newCode, ignorePathList){
         currentVersion[savePath] = 1;
     }
 
-    if (oldVersion == null || oldCode < newCode) {
+    if (true /*oldVersion == null || oldCode < newCode*/) {
         var changeStr = JSON.stringify(changeVersion);
         file.save(basePath, changeStr);
         file.save(codePath, JSON.stringify({code:newCode}));

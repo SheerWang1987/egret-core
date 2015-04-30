@@ -132,14 +132,14 @@ module egret {
                 sound._setAudio(audio);
                 loader.data = sound;
                 __callAsync(Event.dispatchEvent, Event, loader, Event.COMPLETE);
-            };
+            }
 
             function soundPreloadErrorHandler(event) {
                 egret.clearTimeout(audio["__timeoutId"]);
                 audio.removeEventListener('canplaythrough', soundPreloadCanplayHandler, false);
                 audio.removeEventListener("error", soundPreloadErrorHandler, false);
                 IOErrorEvent.dispatchIOErrorEvent(loader);
-            };
+            }
         }
 
 //        private loadWebAudio(loader:URLLoader):void {
@@ -196,11 +196,34 @@ module egret {
         private loadTexture(loader:URLLoader):void {
 
             var request:URLRequest = loader._request;
-            var image = new Image();
+            var image;
+            var winURL = window["URL"] || window["webkitURL"];
+            if (false /*winURL*/) {
+                var xhr = new XMLHttpRequest();
+                xhr.open("get", request.url, true);
+                xhr.responseType = "blob";
+                xhr.onload = function() {
+                    if (this.status == 200) {
+                        var blob = this.response;
+                        image = document.createElement("img");
+                        image.onload = function(e) {
+                            winURL.revokeObjectURL(image.src); // 清除释放
+
+                            onImageComplete(e);
+                        };
+                        image.onerror = onLoadError;
+                        image.src = winURL.createObjectURL(blob);
+                    }
+                };
+                xhr.send();
+            } else {
+                image = new Image();
 //            image.crossOrigin = "Anonymous";
-            image.onload = onImageComplete;
-            image.onerror = onLoadError;
-            image.src = request.url;
+                image.onload = onImageComplete;
+                image.onerror = onLoadError;
+                image.src = request.url;
+            }
+
 
             function onImageComplete(event) {
                 image.onerror = null;
@@ -208,13 +231,13 @@ module egret {
                 var texture:Texture = new Texture();
                 texture._setBitmapData(image);
                 loader.data = texture;
-                __callAsync(Event.dispatchEvent, Event, loader, Event.COMPLETE);
+                egret.__callAsync(egret.Event.dispatchEvent, egret.Event, loader, egret.Event.COMPLETE);
             }
 
             function onLoadError(event) {
                 image.onerror = null;
                 image.onload = null;
-                IOErrorEvent.dispatchIOErrorEvent(loader);
+                egret.IOErrorEvent.dispatchIOErrorEvent(loader);
             }
         }
     }

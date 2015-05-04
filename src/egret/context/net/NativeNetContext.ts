@@ -180,7 +180,7 @@ module egret {
             function onLoadComplete() {
                 self.saveVersion(url);
                 var sound = new egret.Sound();
-                sound.path = url;
+                sound.path = virtualUrl;
                 loader.data = sound;
                 Event.dispatchEvent(loader, Event.COMPLETE);
             }
